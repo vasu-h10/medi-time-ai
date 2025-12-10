@@ -1,0 +1,29 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!-- Define gradients -->
+  <defs>
+    <linearGradient id="leftGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#66BB6A"/>
+      <stop offset="100%" stop-color="#388E3C"/>
+    </linearGradient>
+    <linearGradient id="rightGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFB74D"/>
+      <stop offset="100%" stop-color="#F57C00"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Group to rotate the pill -->
+  <g transform="rotate(-30 256 256)">
+    
+    <!-- Left half with gradient -->
+    <rect x="50" y="200" width="412" height="112" rx="56" ry="56" fill="url(#leftGradient)"/>
+    
+    <!-- Right half using clip-path and gradient -->
+    <clipPath id="rightHalf">
+      <rect x="256" y="200" width="206" height="112" />
+    </clipPath>
+    <rect x="50" y="200" width="412" height="112" rx="56" ry="56" fill="url(#rightGradient)" clip-path="url(#rightHalf)"/>
+    
+    <!-- Straight center dividing line -->
+    <line x1="256" y1="200" x2="256" y2="312" stroke="#FFFFFF" stroke-width="4"/>
+  </g>
+</svg>
