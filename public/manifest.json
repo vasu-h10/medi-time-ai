@@ -2,13 +2,13 @@
   "id": "/",
   "name": "Medi-Time AI",
   "short_name": "Medi-Time",
+  "description": "Medi-Time AI helps users manage medicine reminders with alerts, voice reminders, and a simple, easy-to-use interface.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#0f172a",
   "theme_color": "#0f172a",
-  "description": "Medi-Time AI helps users manage medicine reminders with alerts and a clean interface.",
   "icons": [
     {
       "src": "/icons/icon-192.png",
