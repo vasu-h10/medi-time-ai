@@ -3,10 +3,18 @@ import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 
 export default defineConfig({
+  build: {
+    minify: "esbuild", // ⬅️ IMPORTANT: avoid terser
+  },
   plugins: [
     react(),
     VitePWA({
       registerType: "autoUpdate",
+      strategies: "generateSW",
+      workbox: {
+        cleanupOutdatedCaches: true,
+        sourcemap: false,
+      },
       manifest: {
         id: "/",
         name: "Medi-Time AI",
