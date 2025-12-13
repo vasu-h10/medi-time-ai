@@ -1,14 +1,14 @@
 {
-  "name": "medi-time ai",
-  "short_name": "medi-time",
   "id": "/",
+  "name": "Medi-Time AI",
+  "short_name": "Medi-Time",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#0f172a",
   "theme_color": "#0f172a",
-  "description": "medi-time ai helps users manage medicine reminders intelligently with alerts, voice reminders, and a simple, clean interface. designed to improve medication adherence and daily health routines.",
+  "description": "Medi-Time AI helps users manage medicine reminders with alerts, voice reminders, and a clean interface to support better medication adherence.",
   "icons": [
     {
       "src": "/icons/icon-192.png",
@@ -19,6 +19,12 @@
       "src": "/icons/icon-512.png",
       "sizes": "512x512",
       "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }
