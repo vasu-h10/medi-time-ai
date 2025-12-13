@@ -8,7 +8,7 @@
   "orientation": "portrait",
   "background_color": "#0f172a",
   "theme_color": "#0f172a",
-  "description": "Medi-Time AI helps users manage medicine reminders with alerts, voice reminders, and a clean interface to support better medication adherence.",
+  "description": "Medi-Time AI helps users manage medicine reminders with alerts and a clean interface.",
   "icons": [
     {
       "src": "/icons/icon-192.png",
