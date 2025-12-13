@@ -4,17 +4,14 @@ import { VitePWA } from "vite-plugin-pwa";
 
 export default defineConfig({
   build: {
-    minify: "esbuild", // ⬅️ IMPORTANT: avoid terser
+    minify: "esbuild",
   },
   plugins: [
     react(),
     VitePWA({
-      registerType: "autoUpdate",
-      strategies: "generateSW",
-      workbox: {
-        cleanupOutdatedCaches: true,
-        sourcemap: false,
-      },
+      // 🔴 DISABLE SW GENERATION (Termux-safe)
+      disable: true,
+
       manifest: {
         id: "/",
         name: "Medi-Time AI",
@@ -26,7 +23,7 @@ export default defineConfig({
         background_color: "#0f172a",
         theme_color: "#0f172a",
         description:
-          "Medi-Time AI helps users manage medicine reminders with alerts, voice reminders, and a clean, simple interface.",
+          "Medi-Time AI helps users manage medicine reminders with alerts, voice reminders, and a clean interface.",
         icons: [
           {
             src: "/icons/icon-192.png",
