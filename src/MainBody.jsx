@@ -2,20 +2,18 @@ import { useEffect, useState, useRef } from "react";
 
 /**
  * MainBody.jsx
- * - Female-only TTS
- * - 9+ language support with real translations
- * - Auto fallback if voice not available
+ * - Female-only TTS (auto fallback)
+ * - 9+ language REAL translations
+ * - Sentence frozen at reminder time
  * - NON-STOP alarm + voice loop
  * - Stops ONLY on "Mark as Taken"
- * - History Show/Hide + Delete
+ * - History Show/Hide + Delete Selected
  * - Non-intrusive Ad layout
  */
 
 function MainBody() {
   // ---------------- STATES ----------------
-  const [patientName, setPatientName] = useState(
-    localStorage.getItem("patientName") || ""
-  );
+  const [patientName, setPatientName] = useState(localStorage.getItem("patientName") || "");
   const [medicineName, setMedicineName] = useState("");
   const [dose, setDose] = useState("20 mg");
 
@@ -23,12 +21,8 @@ function MainBody() {
   const [minute, setMinute] = useState("00");
   const [ampm, setAmPm] = useState("AM");
 
-  const [reminders, setReminders] = useState(
-    JSON.parse(localStorage.getItem("reminders") || "[]")
-  );
-  const [history, setHistory] = useState(
-    JSON.parse(localStorage.getItem("history") || "[]")
-  );
+  const [reminders, setReminders] = useState(JSON.parse(localStorage.getItem("reminders") || "[]"));
+  const [history, setHistory] = useState(JSON.parse(localStorage.getItem("history") || "[]"));
 
   const [selectedHistory, setSelectedHistory] = useState([]);
   const [filterDays, setFilterDays] = useState("30");
@@ -45,41 +39,20 @@ function MainBody() {
 
   // ---------------- CONSTANTS ----------------
   const doses = ["10 mg", "20 mg", "50 mg", "100 mg", "250 mg", "500 mg"];
-  const hours = Array.from({ length: 12 }, (_, i) =>
-    String(i + 1).padStart(2, "0")
-  );
-  const minutes = Array.from({ length: 60 }, (_, i) =>
-    String(i).padStart(2, "0")
-  );
+  const hours = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, "0"));
+  const minutes = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, "0"));
 
-  // ---------------- MULTI-LANGUAGE STATEMENTS ----------------
+  // ---------------- MULTI-LANGUAGE TEXT ----------------
   const reminderTextByLang = {
-    "en-IN": ({ name, med, dose }) =>
-      `Mr ${name}, this is your ${med} ${dose} time. Please take it now.`,
-
-    "hi-IN": ({ name, med, dose }) =>
-      `${name} जी, अब ${med} ${dose} लेने का समय है। कृपया अभी लें।`,
-
-    "te-IN": ({ name, med, dose }) =>
-      `${name} గారు, ఇది మీ ${med} ${dose} తీసుకునే సమయం. దయచేసి ఇప్పుడు తీసుకోండి.`,
-
-    "ta-IN": ({ name, med, dose }) =>
-      `${name}, இது உங்கள் ${med} ${dose} எடுத்துக்கொள்ளும் நேரம். தயவுசெய்து இப்போது எடுத்துக்கொள்ளுங்கள்.`,
-
-    "kn-IN": ({ name, med, dose }) =>
-      `${name}, ಇದು ನಿಮ್ಮ ${med} ${dose} ತೆಗೆದುಕೊಳ್ಳುವ ಸಮಯ. ದಯವಿಟ್ಟು ಈಗ ತೆಗೆದುಕೊಳ್ಳಿ.`,
-
-    "ml-IN": ({ name, med, dose }) =>
-      `${name}, ഇത് നിങ്ങളുടെ ${med} ${dose} എടുക്കേണ്ട സമയമാണ്. ദയവായി ഇപ്പോൾ എടുക്കുക.`,
-
-    "bn-IN": ({ name, med, dose }) =>
-      `${name}, এখন আপনার ${med} ${dose} নেওয়ার সময়। অনুগ্রহ করে এখনই নিন।`,
-
-    "mr-IN": ({ name, med, dose }) =>
-      `${name}, आता तुमचे ${med} ${dose} घेण्याची वेळ झाली आहे. कृपया आत्ताच घ्या.`,
-
-    "gu-IN": ({ name, med, dose }) =>
-      `${name}, હવે તમારું ${med} ${dose} લેવાનો સમય છે. કૃપા કરીને હવે લો।`
+    "en-IN": ({ name, med, dose }) => `Mr ${name}, this is your ${med} ${dose} time. Please take it now.`,
+    "hi-IN": ({ name, med, dose }) => `${name} जी, अब ${med} ${dose} लेने का समय है। कृपया अभी लें।`,
+    "te-IN": ({ name, med, dose }) => `${name} గారు, ఇది మీ ${med} ${dose} తీసుకునే సమయం. దయచేసి ఇప్పుడు తీసుకోండి.`,
+    "ta-IN": ({ name, med, dose }) => `${name}, இது உங்கள் ${med} ${dose} எடுத்துக்கொள்ளும் நேரம். தயவுசெய்து இப்போது எடுத்துக்கொள்ளுங்கள்.`,
+    "kn-IN": ({ name, med, dose }) => `${name}, ಇದು ನಿಮ್ಮ ${med} ${dose} ತೆಗೆದುಕೊಳ್ಳುವ ಸಮಯ. ದಯವಿಟ್ಟು ಈಗ ತೆಗೆದುಕೊಳ್ಳಿ.`,
+    "ml-IN": ({ name, med, dose }) => `${name}, ഇത് നിങ്ങളുടെ ${med} ${dose} എടുക്കേണ്ട സമയമാണ്. ദയവായി ഇപ്പോൾ എടുക്കുക.`,
+    "bn-IN": ({ name, med, dose }) => `${name}, এখন আপনার ${med} ${dose} নেওয়ার সময়। অনুগ্রহ করে এখনই নিন।`,
+    "mr-IN": ({ name, med, dose }) => `${name}, आता तुमचे ${med} ${dose} घेण्याची वेळ झाली आहे. कृपया आत्ताच घ्या.`,
+    "gu-IN": ({ name, med, dose }) => `${name}, હવે તમારું ${med} ${dose} લેવાનો સમય છે. કૃપા કરીને હવે લો।`,
   };
 
   const getReminderText = () => {
@@ -92,8 +65,7 @@ function MainBody() {
     const load = () => setAllVoices(window.speechSynthesis.getVoices());
     load();
     window.speechSynthesis.addEventListener("voiceschanged", load);
-    return () =>
-      window.speechSynthesis.removeEventListener("voiceschanged", load);
+    return () => window.speechSynthesis.removeEventListener("voiceschanged", load);
   }, []);
 
   // ---------------- STORAGE ----------------
@@ -103,7 +75,7 @@ function MainBody() {
     localStorage.setItem("history", JSON.stringify(history));
   }, [patientName, reminders, history]);
 
-  // ---------------- VOICE SELECTION ----------------
+  // ---------------- VOICE SELECT ----------------
   const selectVoice = (lang) =>
     allVoices.find(v => v.lang === lang) ||
     allVoices.find(v => v.lang.startsWith(lang.split("-")[0])) ||
@@ -159,38 +131,67 @@ function MainBody() {
   };
 
   // ---------------- TRIGGER ----------------
-  const triggerReminder = () => {
+  const triggerReminder = (reminder) => {
     setIsRinging(true);
-    setCurrentReminder(true);
+    setCurrentReminder(reminder);
     playAlarm();
-    speakLoop(getReminderText());
+    speakLoop(reminder.text);
   };
 
+  // ---------------- STOP (USER ONLY) ----------------
   useEffect(() => {
     window.stopAlarm = () => {
+      if (!currentReminder) return;
+
       stopAllSound();
       setHistory(h => [
         {
           id: Date.now(),
           patient: patientName,
-          medicine: medicineName,
-          dose,
+          medicine: currentReminder.medicine,
+          dose: currentReminder.dose,
           takenAt: new Date().toLocaleString(),
-          timestamp: Date.now()
+          timestamp: Date.now(),
         },
-        ...h
+        ...h,
       ]);
+
       setIsRinging(false);
       setCurrentReminder(null);
     };
     return () => delete window.stopAlarm;
-  }, [patientName, medicineName, dose]);
+  }, [currentReminder, patientName]);
 
   // ---------------- ADD REMINDER ----------------
   const addReminder = () => {
-    setTimeout(triggerReminder, getDelay(hour, minute, ampm));
-    setReminders(r => [...r, { id: Date.now(), medicineName, dose }]);
+    if (!patientName || !medicineName) {
+      alert("Enter patient and medicine");
+      return;
+    }
+
+    const reminder = {
+      medicine: medicineName,
+      dose,
+      text: getReminderText(),
+    };
+
+    setTimeout(() => triggerReminder(reminder), getDelay(hour, minute, ampm));
+    setReminders(r => [...r, reminder]);
+
     alert("✅ Reminder added");
+  };
+
+  // ---------------- HISTORY ----------------
+  const filteredHistory = history.filter(h =>
+    filterDays === "all" ? true : Date.now() - h.timestamp <= filterDays * 86400000
+  );
+
+  const toggleSelectHistory = (id) =>
+    setSelectedHistory(s => s.includes(id) ? s.filter(x => x !== id) : [...s, id]);
+
+  const deleteSelectedHistory = () => {
+    setHistory(h => h.filter(x => !selectedHistory.includes(x.id)));
+    setSelectedHistory([]);
   };
 
   // ---------------- UI ----------------
@@ -198,15 +199,9 @@ function MainBody() {
     <main style={{ padding: 20 }}>
       <h2>🗣 Voice Language</h2>
       <select value={voiceLang} onChange={e => setVoiceLang(e.target.value)}>
-        <option value="en-IN">English</option>
-        <option value="hi-IN">Hindi</option>
-        <option value="te-IN">Telugu</option>
-        <option value="ta-IN">Tamil</option>
-        <option value="kn-IN">Kannada</option>
-        <option value="ml-IN">Malayalam</option>
-        <option value="bn-IN">Bengali</option>
-        <option value="mr-IN">Marathi</option>
-        <option value="gu-IN">Gujarati</option>
+        {Object.keys(reminderTextByLang).map(k => (
+          <option key={k} value={k}>{k}</option>
+        ))}
       </select>
 
       <h2>👤 Patient</h2>
@@ -227,9 +222,47 @@ function MainBody() {
 
       {isRinging && (
         <button onClick={() => window.stopAlarm()} style={{ background: "green", color: "#fff", width: "100%", marginTop: 15 }}>
-          ✅ Mark as Taken
+          ✅ Mark as Taken (Stop Alarm)
         </button>
       )}
+
+      <hr />
+
+      <h2>📜 History</h2>
+      <button onClick={() => setShowHistory(!showHistory)}>
+        {showHistory ? "🙈 Hide History" : "👁 Show History"}
+      </button>
+
+      {showHistory && (
+        <>
+          <select value={filterDays} onChange={e => setFilterDays(e.target.value)}>
+            <option value="30">Last 30 days</option>
+            <option value="all">All</option>
+          </select>
+
+          {selectedHistory.length > 0 && (
+            <button onClick={deleteSelectedHistory} style={{ background: "red", color: "#fff", width: "100%" }}>
+              🗑 Delete Selected ({selectedHistory.length})
+            </button>
+          )}
+
+          {filteredHistory.map(h => (
+            <div key={h.id}>
+              <input
+                type="checkbox"
+                checked={selectedHistory.includes(h.id)}
+                onChange={() => toggleSelectHistory(h.id)}
+              />{" "}
+              {h.medicine} — {h.dose} ({h.takenAt})
+            </div>
+          ))}
+        </>
+      )}
+
+      <div style={{ marginTop: 30, textAlign: "center", background: "#f1f5f9", padding: 15 }}>
+        <small>Advertisement</small>
+        <div style={{ height: 60, background: "#e5e7eb", marginTop: 5 }} />
+      </div>
     </main>
   );
 }
