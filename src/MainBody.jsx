@@ -6,7 +6,9 @@ import { useEffect, useState, useRef } from "react";
  * - 9+ language full-sentence translations
  * - NON-STOP alarm + chained voice loop (NO CUT SPEECH)
  * - Stops ONLY on "Mark as Taken"
+ * - Medicine image (camera / gallery, local only)
  * - History Show/Hide + Delete selected
+ * - Advertisement layout
  * - Play Store / TWA safe
  */
 
@@ -17,6 +19,7 @@ function MainBody() {
   );
   const [medicineName, setMedicineName] = useState("");
   const [dose, setDose] = useState("20 mg");
+  const [medicineImage, setMedicineImage] = useState(null);
 
   const [hour, setHour] = useState("08");
   const [minute, setMinute] = useState("00");
@@ -25,7 +28,6 @@ function MainBody() {
   const [history, setHistory] = useState(
     JSON.parse(localStorage.getItem("history") || "[]")
   );
-
   const [selectedHistory, setSelectedHistory] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
 
@@ -50,28 +52,20 @@ function MainBody() {
   const reminderTextByLang = {
     "en-IN": ({ n, m, d }) =>
       `Mr ${n}, this is your ${m} ${d} time. Please take it now.`,
-
     "hi-IN": ({ n, m, d }) =>
       `${n} जी, अब ${m} ${d} लेने का समय है। कृपया अभी लें।`,
-
     "te-IN": ({ n, m, d }) =>
       `${n} గారు, ఇది మీ ${m} ${d} తీసుకునే సమయం. దయచేసి ఇప్పుడు తీసుకోండి.`,
-
     "ta-IN": ({ n, m, d }) =>
       `${n}, இது உங்கள் ${m} ${d} எடுத்துக்கொள்ளும் நேரம். தயவுசெய்து இப்போது எடுத்துக்கொள்ளுங்கள்.`,
-
     "kn-IN": ({ n, m, d }) =>
       `${n}, ಇದು ನಿಮ್ಮ ${m} ${d} ತೆಗೆದುಕೊಳ್ಳುವ ಸಮಯ. ದಯವಿಟ್ಟು ಈಗ ತೆಗೆದುಕೊಳ್ಳಿ.`,
-
     "ml-IN": ({ n, m, d }) =>
       `${n}, ഇത് നിങ്ങളുടെ ${m} ${d} എടുക്കേണ്ട സമയമാണ്. ദയവായി ഇപ്പോൾ എടുക്കുക.`,
-
     "bn-IN": ({ n, m, d }) =>
       `${n}, এখন আপনার ${m} ${d} নেওয়ার সময়। অনুগ্রহ করে এখনই নিন।`,
-
     "mr-IN": ({ n, m, d }) =>
       `${n}, आता तुमचे ${m} ${d} घेण्याची वेळ झाली आहे. कृपया आत्ताच घ्या.`,
-
     "gu-IN": ({ n, m, d }) =>
       `${n}, હવે તમારું ${m} ${d} લેવાનો સમય છે. કૃપા કરીને હવે લો।`,
   };
@@ -105,6 +99,16 @@ function MainBody() {
     allVoices.find(v => v.lang.startsWith("en")) ||
     allVoices[0];
 
+  // ---------------- IMAGE PICK ----------------
+  const handleImagePick = (e) => {
+    const file = e.target.files[0];
+    if (!file || !file.type.startsWith("image/")) return;
+
+    const reader = new FileReader();
+    reader.onloadend = () => setMedicineImage(reader.result);
+    reader.readAsDataURL(file);
+  };
+
   // ---------------- ALARM ----------------
   const playAlarm = () => {
     const a = new Audio("/alarm.mp3");
@@ -119,7 +123,7 @@ function MainBody() {
     alarmRef.current = null;
   };
 
-  // ---------------- SAFE SPEECH LOOP (NO BREAKS) ----------------
+  // ---------------- SAFE SPEECH LOOP (NO CUT) ----------------
   const speakLoop = (text) => {
     const voice = selectVoice(voiceLang);
     let stopped = false;
@@ -183,12 +187,14 @@ function MainBody() {
         id: Date.now(),
         medicine: medicineName,
         dose,
+        image: medicineImage,
         takenAt: new Date().toLocaleString(),
       },
       ...h,
     ]);
 
     setIsRinging(false);
+    setMedicineImage(null);
   };
 
   // ---------------- ADD REMINDER ----------------
@@ -227,6 +233,17 @@ function MainBody() {
         {doses.map(d => <option key={d}>{d}</option>)}
       </select>
 
+      <h3>📷 Medicine Photo (optional)</h3>
+      <input type="file" accept="image/*" capture="environment" onChange={handleImagePick} />
+
+      {medicineImage && (
+        <img
+          src={medicineImage}
+          alt="Medicine"
+          style={{ width: 120, height: 120, objectFit: "cover", marginTop: 10 }}
+        />
+      )}
+
       <h2>⏰ Time</h2>
       <select value={hour} onChange={e => setHour(e.target.value)}>{hours.map(h => <option key={h}>{h}</option>)}</select>
       <select value={minute} onChange={e => setMinute(e.target.value)}>{minutes.map(m => <option key={m}>{m}</option>)}</select>
@@ -235,10 +252,7 @@ function MainBody() {
       <button onClick={addReminder}>➕ Add Reminder</button>
 
       {isRinging && (
-        <button
-          onClick={markAsTaken}
-          style={{ background: "green", color: "#fff", width: "100%", marginTop: 15, fontSize: 18 }}
-        >
+        <button onClick={markAsTaken} style={{ background: "green", color: "#fff", width: "100%", marginTop: 15, fontSize: 18 }}>
           ✅ Mark as Taken (Stop Alarm)
         </button>
       )}
@@ -259,49 +273,20 @@ function MainBody() {
           )}
 
           {history.map(h => (
-            <div key={h.id}>
-              <input
-                type="checkbox"
-                checked={selectedHistory.includes(h.id)}
-                onChange={() => toggleSelect(h.id)}
-              />{" "}
-              {h.medicine} — {h.dose} ({h.takenAt})
+            <div key={h.id} style={{ display: "flex", gap: 10, marginTop: 8 }}>
+              <input type="checkbox" checked={selectedHistory.includes(h.id)} onChange={() => toggleSelect(h.id)} />
+              {h.image && <img src={h.image} alt="" style={{ width: 40, height: 40, objectFit: "cover" }} />}
+              <div>{h.medicine} — {h.dose}<br /><small>{h.takenAt}</small></div>
             </div>
           ))}
         </>
       )}
-{/* ---------------- Advertisement ---------------- */}
-<div
-  style={{
-    marginTop: 30,
-    padding: 16,
-    borderTop: "1px solid #e5e7eb",
-    background: "#f8fafc",
-    textAlign: "center",
-  }}
->
-  <small style={{ color: "#64748b" }}>Advertisement</small>
 
-  {/* Web / PWA Ad container */}
-  <div
-    style={{
-      marginTop: 8,
-      height: 60,
-      width: "100%",
-      maxWidth: 360,
-      marginLeft: "auto",
-      marginRight: "auto",
-      background: "#e5e7eb",
-      borderRadius: 6,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      fontSize: 12,
-      color: "#475569",
-    }}
-  >
-    Ad will be displayed here
-  </div>
+      {/* Advertisement */}
+      <div style={{ marginTop: 30, padding: 16, background: "#f8fafc", textAlign: "center" }}>
+        <small>Advertisement</small>
+        <div style={{ height: 60, background: "#e5e7eb", marginTop: 8 }} />
+      </div>
     </main>
   );
 }
