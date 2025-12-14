@@ -2,13 +2,14 @@ import { useEffect, useState, useRef } from "react";
 
 /**
  * MainBody.jsx
+ * FINAL VERSION
  * - Female-only TTS (auto fallback)
- * - 9+ language full-sentence translations
- * - NON-STOP alarm + chained voice loop (NO CUT SPEECH)
+ * - 9+ language full sentence translations
+ * - NON-STOP alarm + chained speech (no cuts)
  * - Stops ONLY on "Mark as Taken"
- * - Medicine image (camera / gallery, local only)
- * - History Show/Hide + Delete selected
- * - Advertisement layout
+ * - Gallery image (compressed)
+ * - Alarm image preview
+ * - History show/hide + multi delete
  * - Play Store / TWA safe
  */
 
@@ -41,49 +42,35 @@ function MainBody() {
 
   // ---------------- CONSTANTS ----------------
   const doses = ["10 mg", "20 mg", "50 mg", "100 mg", "250 mg", "500 mg"];
-  const hours = Array.from({ length: 12 }, (_, i) =>
-    String(i + 1).padStart(2, "0")
-  );
-  const minutes = Array.from({ length: 60 }, (_, i) =>
-    String(i).padStart(2, "0")
-  );
+  const hours = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, "0"));
+  const minutes = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, "0"));
 
   // ---------------- TRANSLATIONS ----------------
   const reminderTextByLang = {
-    "en-IN": ({ n, m, d }) =>
-      `Mr ${n}, this is your ${m} ${d} time. Please take it now.`,
-    "hi-IN": ({ n, m, d }) =>
-      `${n} जी, अब ${m} ${d} लेने का समय है। कृपया अभी लें।`,
-    "te-IN": ({ n, m, d }) =>
-      `${n} గారు, ఇది మీ ${m} ${d} తీసుకునే సమయం. దయచేసి ఇప్పుడు తీసుకోండి.`,
-    "ta-IN": ({ n, m, d }) =>
-      `${n}, இது உங்கள் ${m} ${d} எடுத்துக்கொள்ளும் நேரம். தயவுசெய்து இப்போது எடுத்துக்கொள்ளுங்கள்.`,
-    "kn-IN": ({ n, m, d }) =>
-      `${n}, ಇದು ನಿಮ್ಮ ${m} ${d} ತೆಗೆದುಕೊಳ್ಳುವ ಸಮಯ. ದಯವಿಟ್ಟು ಈಗ ತೆಗೆದುಕೊಳ್ಳಿ.`,
-    "ml-IN": ({ n, m, d }) =>
-      `${n}, ഇത് നിങ്ങളുടെ ${m} ${d} എടുക്കേണ്ട സമയമാണ്. ദയവായി ഇപ്പോൾ എടുക്കുക.`,
-    "bn-IN": ({ n, m, d }) =>
-      `${n}, এখন আপনার ${m} ${d} নেওয়ার সময়। অনুগ্রহ করে এখনই নিন।`,
-    "mr-IN": ({ n, m, d }) =>
-      `${n}, आता तुमचे ${m} ${d} घेण्याची वेळ झाली आहे. कृपया आत्ताच घ्या.`,
-    "gu-IN": ({ n, m, d }) =>
-      `${n}, હવે તમારું ${m} ${d} લેવાનો સમય છે. કૃપા કરીને હવે લો।`,
+    "en-IN": ({ n, m, d }) => `Mr ${n}, this is your ${m} ${d} time. Please take it now.`,
+    "hi-IN": ({ n, m, d }) => `${n} जी, अब ${m} ${d} लेने का समय है। कृपया अभी लें।`,
+    "te-IN": ({ n, m, d }) => `${n} గారు, ఇది మీ ${m} ${d} తీసుకునే సమయం. దయచేసి ఇప్పుడు తీసుకోండి.`,
+    "ta-IN": ({ n, m, d }) => `${n}, இது உங்கள் ${m} ${d} எடுத்துக்கொள்ளும் நேரம்.`,
+    "kn-IN": ({ n, m, d }) => `${n}, ಇದು ನಿಮ್ಮ ${m} ${d} ತೆಗೆದುಕೊಳ್ಳುವ ಸಮಯ.`,
+    "ml-IN": ({ n, m, d }) => `${n}, ഇത് നിങ്ങളുടെ ${m} ${d} എടുക്കേണ്ട സമയമാണ്.`,
+    "bn-IN": ({ n, m, d }) => `${n}, এখন আপনার ${m} ${d} নেওয়ার সময়।`,
+    "mr-IN": ({ n, m, d }) => `${n}, आता तुमचे ${m} ${d} घेण्याची वेळ झाली आहे.`,
+    "gu-IN": ({ n, m, d }) => `${n}, હવે તમારું ${m} ${d} લેવાનો સમય છે.`,
   };
 
-  const getReminderText = () => {
-    const fn =
-      reminderTextByLang[voiceLang] || reminderTextByLang["en-IN"];
-    return fn({ n: patientName, m: medicineName, d: dose });
-  };
+  const getReminderText = () =>
+    (reminderTextByLang[voiceLang] || reminderTextByLang["en-IN"])({
+      n: patientName,
+      m: medicineName,
+      d: dose,
+    });
 
   // ---------------- LOAD VOICES ----------------
   useEffect(() => {
-    const load = () =>
-      setAllVoices(window.speechSynthesis.getVoices() || []);
+    const load = () => setAllVoices(window.speechSynthesis.getVoices());
     load();
     window.speechSynthesis.addEventListener("voiceschanged", load);
-    return () =>
-      window.speechSynthesis.removeEventListener("voiceschanged", load);
+    return () => window.speechSynthesis.removeEventListener("voiceschanged", load);
   }, []);
 
   // ---------------- STORAGE ----------------
@@ -99,16 +86,6 @@ function MainBody() {
     allVoices.find(v => v.lang.startsWith("en")) ||
     allVoices[0];
 
-  // ---------------- IMAGE PICK ----------------
-  const handleImagePick = (e) => {
-    const file = e.target.files[0];
-    if (!file || !file.type.startsWith("image/")) return;
-
-    const reader = new FileReader();
-    reader.onloadend = () => setMedicineImage(reader.result);
-    reader.readAsDataURL(file);
-  };
-
   // ---------------- ALARM ----------------
   const playAlarm = () => {
     const a = new Audio("/alarm.mp3");
@@ -123,34 +100,21 @@ function MainBody() {
     alarmRef.current = null;
   };
 
-  // ---------------- SAFE SPEECH LOOP (NO CUT) ----------------
+  // ---------------- SAFE SPEECH LOOP ----------------
   const speakLoop = (text) => {
     const voice = selectVoice(voiceLang);
     let stopped = false;
 
     const speakOnce = () => {
       if (stopped) return;
-
       const u = new SpeechSynthesisUtterance(text);
       if (voice) u.voice = voice;
       u.lang = voice?.lang || "en-IN";
-      u.volume = 1;
-      u.rate = 1;
-      u.pitch = 1.1;
-
-      u.onend = () => {
-        if (!stopped) setTimeout(speakOnce, 800);
-      };
-
-      u.onerror = () => {
-        if (!stopped) setTimeout(speakOnce, 1500);
-      };
-
+      u.onend = () => !stopped && setTimeout(speakOnce, 800);
       window.speechSynthesis.speak(u);
     };
 
     speakOnce();
-
     return () => {
       stopped = true;
       window.speechSynthesis.cancel();
@@ -162,12 +126,34 @@ function MainBody() {
     let h = parseInt(hour);
     if (ampm === "PM" && h !== 12) h += 12;
     if (ampm === "AM" && h === 12) h = 0;
-
     const now = new Date();
     const t = new Date();
     t.setHours(h, parseInt(minute), 0, 0);
     if (t < now) t.setDate(t.getDate() + 1);
     return t - now;
+  };
+
+  // ---------------- IMAGE PICK (COMPRESS) ----------------
+  const onImagePick = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const img = new Image();
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      img.src = reader.result;
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const scale = Math.min(600 / img.width, 600 / img.height, 1);
+        canvas.width = img.width * scale;
+        canvas.height = img.height * scale;
+        canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+        setMedicineImage(canvas.toDataURL("image/jpeg", 0.8));
+      };
+    };
+
+    reader.readAsDataURL(file);
   };
 
   // ---------------- TRIGGER ----------------
@@ -177,7 +163,7 @@ function MainBody() {
     stopSpeechRef.current = speakLoop(getReminderText());
   };
 
-  // ---------------- STOP (USER ONLY) ----------------
+  // ---------------- STOP ----------------
   const markAsTaken = () => {
     stopAlarm();
     stopSpeechRef.current?.();
@@ -194,20 +180,11 @@ function MainBody() {
     ]);
 
     setIsRinging(false);
-    setMedicineImage(null);
   };
 
-  // ---------------- ADD REMINDER ----------------
-  const addReminder = () => {
-    setTimeout(triggerReminder, getDelay());
-    alert("✅ Reminder added");
-  };
-
-  // ---------------- HISTORY HELPERS ----------------
+  // ---------------- HISTORY DELETE ----------------
   const toggleSelect = (id) =>
-    setSelectedHistory(s =>
-      s.includes(id) ? s.filter(x => x !== id) : [...s, id]
-    );
+    setSelectedHistory(s => s.includes(id) ? s.filter(x => x !== id) : [...s, id]);
 
   const deleteSelected = () => {
     setHistory(h => h.filter(x => !selectedHistory.includes(x.id)));
@@ -229,63 +206,57 @@ function MainBody() {
 
       <h2>💊 Medicine</h2>
       <input value={medicineName} onChange={e => setMedicineName(e.target.value)} />
+      <input type="file" accept="image/*" onChange={onImagePick} />
+
+      {medicineImage && <img src={medicineImage} style={{ width: 120, marginTop: 8 }} />}
+
       <select value={dose} onChange={e => setDose(e.target.value)}>
         {doses.map(d => <option key={d}>{d}</option>)}
       </select>
-
-      <h3>📷 Medicine Photo (optional)</h3>
-      <input type="file" accept="image/*" capture="environment" onChange={handleImagePick} />
-
-      {medicineImage && (
-        <img
-          src={medicineImage}
-          alt="Medicine"
-          style={{ width: 120, height: 120, objectFit: "cover", marginTop: 10 }}
-        />
-      )}
 
       <h2>⏰ Time</h2>
       <select value={hour} onChange={e => setHour(e.target.value)}>{hours.map(h => <option key={h}>{h}</option>)}</select>
       <select value={minute} onChange={e => setMinute(e.target.value)}>{minutes.map(m => <option key={m}>{m}</option>)}</select>
       <select value={ampm} onChange={e => setAmPm(e.target.value)}><option>AM</option><option>PM</option></select>
 
-      <button onClick={addReminder}>➕ Add Reminder</button>
+      <button onClick={() => setTimeout(triggerReminder, getDelay())}>➕ Add Reminder</button>
 
       {isRinging && (
-        <button onClick={markAsTaken} style={{ background: "green", color: "#fff", width: "100%", marginTop: 15, fontSize: 18 }}>
-          ✅ Mark as Taken (Stop Alarm)
-        </button>
+        <>
+          {medicineImage && <img src={medicineImage} style={{ width: 140, marginTop: 10 }} />}
+          <button onClick={markAsTaken} style={{ background: "green", color: "#fff", width: "100%", marginTop: 10 }}>
+            ✅ Mark as Taken
+          </button>
+        </>
       )}
 
       <hr />
 
       <h2>📜 History</h2>
       <button onClick={() => setShowHistory(!showHistory)}>
-        {showHistory ? "🙈 Hide History" : "👁 Show History"}
+        {showHistory ? "🙈 Hide" : "👁 Show"}
       </button>
 
       {showHistory && (
         <>
           {selectedHistory.length > 0 && (
             <button onClick={deleteSelected} style={{ background: "red", color: "#fff", width: "100%" }}>
-              🗑 Delete Selected ({selectedHistory.length})
+              🗑 Delete Selected
             </button>
           )}
 
           {history.map(h => (
-            <div key={h.id} style={{ display: "flex", gap: 10, marginTop: 8 }}>
-              <input type="checkbox" checked={selectedHistory.includes(h.id)} onChange={() => toggleSelect(h.id)} />
-              {h.image && <img src={h.image} alt="" style={{ width: 40, height: 40, objectFit: "cover" }} />}
-              <div>{h.medicine} — {h.dose}<br /><small>{h.takenAt}</small></div>
+            <div key={h.id}>
+              <input type="checkbox" onChange={() => toggleSelect(h.id)} />
+              {h.image && <img src={h.image} style={{ width: 50 }} />} {h.medicine}
             </div>
           ))}
         </>
       )}
 
-      {/* Advertisement */}
-      <div style={{ marginTop: 30, padding: 16, background: "#f8fafc", textAlign: "center" }}>
+      <div style={{ marginTop: 30, background: "#f1f5f9", padding: 15, textAlign: "center" }}>
         <small>Advertisement</small>
-        <div style={{ height: 60, background: "#e5e7eb", marginTop: 8 }} />
+        <div style={{ height: 60, background: "#e5e7eb", marginTop: 6 }} />
       </div>
     </main>
   );
