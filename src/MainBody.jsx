@@ -25,10 +25,14 @@ function MainBody() {
   const [ampm, setAmPm] = useState("AM");
 
   const [reminders, setReminders] = useState(
-    typeof window !== "undefined" ? JSON.parse(localStorage.getItem("reminders") || "[]") : []
+    typeof window !== "undefined"
+      ? JSON.parse(localStorage.getItem("reminders") || "[]")
+      : []
   );
   const [history, setHistory] = useState(
-    typeof window !== "undefined" ? JSON.parse(localStorage.getItem("history") || "[]") : []
+    typeof window !== "undefined"
+      ? JSON.parse(localStorage.getItem("history") || "[]")
+      : []
   );
 
   const [selectedHistory, setSelectedHistory] = useState([]);
@@ -48,8 +52,12 @@ function MainBody() {
   const autoStopTimeoutRef = useRef(null);
 
   const doses = ["10 mg", "20 mg", "50 mg", "100 mg", "250 mg", "500 mg", "0.5 g", "1 g"];
-  const hours = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, "0"));
-  const minutes = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, "0"));
+  const hours = Array.from({ length: 12 }, (_, i) =>
+    String(i + 1).padStart(2, "0")
+  );
+  const minutes = Array.from({ length: 60 }, (_, i) =>
+    String(i).padStart(2, "0")
+  );
 
   // -----------------------
   // Load voices
@@ -58,7 +66,8 @@ function MainBody() {
     const load = () => setAllVoices(window.speechSynthesis.getVoices() || []);
     load();
     window.speechSynthesis.addEventListener("voiceschanged", load);
-    return () => window.speechSynthesis.removeEventListener("voiceschanged", load);
+    return () =>
+      window.speechSynthesis.removeEventListener("voiceschanged", load);
   }, []);
 
   // -----------------------
@@ -138,7 +147,14 @@ function MainBody() {
     window.stopAlarm = () => {
       stopAllSound();
       setHistory((h) => [
-        { id: Date.now(), patient: patientName, medicine: currentReminder.med, dose: currentReminder.d, takenAt: new Date().toLocaleString(), timestamp: Date.now() },
+        {
+          id: Date.now(),
+          patient: patientName,
+          medicine: currentReminder.med,
+          dose: currentReminder.d,
+          takenAt: new Date().toLocaleString(),
+          timestamp: Date.now(),
+        },
         ...h,
       ]);
       setIsRinging(false);
@@ -151,8 +167,20 @@ function MainBody() {
   // -----------------------
   const addReminder = () => {
     const delay = getDelay(hour, minute, ampm);
-    const id = setTimeout(() => triggerReminder(medicineName, dose), delay);
-    setReminders((r) => [...r, { id: Date.now(), medicineName, dose, time: `${hour}:${minute} ${ampm}`, timerId: id }]);
+    const timerId = setTimeout(
+      () => triggerReminder(medicineName, dose),
+      delay
+    );
+    setReminders((r) => [
+      ...r,
+      {
+        id: Date.now(),
+        medicineName,
+        dose,
+        time: `${hour}:${minute} ${ampm}`,
+        timerId,
+      },
+    ]);
     alert("Reminder added");
   };
 
@@ -160,11 +188,15 @@ function MainBody() {
   // History helpers
   // -----------------------
   const filteredHistory = history.filter((h) =>
-    filterDays === "all" ? true : Date.now() - h.timestamp <= filterDays * 86400000
+    filterDays === "all"
+      ? true
+      : Date.now() - h.timestamp <= filterDays * 86400000
   );
 
   const toggleSelectHistory = (id) =>
-    setSelectedHistory((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
+    setSelectedHistory((s) =>
+      s.includes(id) ? s.filter((x) => x !== id) : [...s, id]
+    );
 
   const deleteSelectedHistory = () => {
     setHistory((h) => h.filter((x) => !selectedHistory.includes(x.id)));
@@ -177,32 +209,64 @@ function MainBody() {
   return (
     <main style={{ padding: 20 }}>
       <h2>🗣 Voice Language</h2>
-      <select value={voiceLang} onChange={(e) => setVoiceLang(e.target.value)} style={{ width: "100%" }}>
+      <select
+        value={voiceLang}
+        onChange={(e) => setVoiceLang(e.target.value)}
+        style={{ width: "100%" }}
+      >
         <option value="en-IN">English (India)</option>
         <option value="hi-IN">Hindi</option>
         <option value="te-IN">Telugu</option>
       </select>
 
       <h2>👤 Patient</h2>
-      <input value={patientName} onChange={(e) => setPatientName(e.target.value)} style={{ width: "100%" }} />
+      <input
+        value={patientName}
+        onChange={(e) => setPatientName(e.target.value)}
+        style={{ width: "100%" }}
+      />
 
       <h2>💊 Add Medicine</h2>
-      <input value={medicineName} onChange={(e) => setMedicineName(e.target.value)} style={{ width: "100%" }} />
-      <select value={dose} onChange={(e) => setDose(e.target.value)} style={{ width: "100%" }}>
-        {doses.map((d) => <option key={d}>{d}</option>)}
+      <input
+        value={medicineName}
+        onChange={(e) => setMedicineName(e.target.value)}
+        style={{ width: "100%" }}
+      />
+      <select
+        value={dose}
+        onChange={(e) => setDose(e.target.value)}
+        style={{ width: "100%" }}
+      >
+        {doses.map((d) => (
+          <option key={d}>{d}</option>
+        ))}
       </select>
 
       <h2>⏰ Time</h2>
       <div style={{ display: "flex", gap: 10 }}>
-        <select value={hour} onChange={(e) => setHour(e.target.value)}>{hours.map(h => <option key={h}>{h}</option>)}</select>
-        <select value={minute} onChange={(e) => setMinute(e.target.value)}>{minutes.map(m => <option key={m}>{m}</option>)}</select>
-        <select value={ampm} onChange={(e) => setAmPm(e.target.value)}><option>AM</option><option>PM</option></select>
+        <select value={hour} onChange={(e) => setHour(e.target.value)}>
+          {hours.map((h) => (
+            <option key={h}>{h}</option>
+          ))}
+        </select>
+        <select value={minute} onChange={(e) => setMinute(e.target.value)}>
+          {minutes.map((m) => (
+            <option key={m}>{m}</option>
+          ))}
+        </select>
+        <select value={ampm} onChange={(e) => setAmPm(e.target.value)}>
+          <option>AM</option>
+          <option>PM</option>
+        </select>
       </div>
 
       <button onClick={addReminder}>➕ Add Reminder</button>
 
       {isRinging && (
-        <button onClick={() => window.stopAlarm()} style={{ background: "green", color: "#fff", width: "100%" }}>
+        <button
+          onClick={() => window.stopAlarm()}
+          style={{ background: "green", color: "#fff", width: "100%" }}
+        >
           ✅ Taken (Stop Alarm)
         </button>
       )}
@@ -216,18 +280,44 @@ function MainBody() {
 
       {showHistory && (
         <>
-          <select value={filterDays} onChange={(e) => setFilterDays(e.target.value)}>
+          <select
+            value={filterDays}
+            onChange={(e) => setFilterDays(e.target.value)}
+          >
             <option value="30">Last 30 days</option>
             <option value="all">All</option>
           </select>
 
-          <button onClick={deleteSelectedHistory} style={{ background: "red", color: "#fff" }}>
-            Delete Selected
-          </button>
+          {selectedHistory.length > 0 && (
+            <button
+              onClick={deleteSelectedHistory}
+              style={{
+                marginTop: 10,
+                padding: 10,
+                background: "red",
+                color: "white",
+                width: "100%",
+                borderRadius: 6,
+                fontWeight: "bold",
+              }}
+            >
+              🗑 Delete Selected ({selectedHistory.length})
+            </button>
+          )}
+
+          {selectedHistory.length === 0 && (
+            <p style={{ fontSize: 12, color: "#666" }}>
+              ☑ Select history items to enable delete
+            </p>
+          )}
 
           {filteredHistory.map((h) => (
             <div key={h.id}>
-              <input type="checkbox" checked={selectedHistory.includes(h.id)} onChange={() => toggleSelectHistory(h.id)} />
+              <input
+                type="checkbox"
+                checked={selectedHistory.includes(h.id)}
+                onChange={() => toggleSelectHistory(h.id)}
+              />{" "}
               {h.medicine} — {h.dose} ({h.takenAt})
             </div>
           ))}
@@ -245,9 +335,7 @@ function MainBody() {
         }}
       >
         <small>Advertisement</small>
-        <div style={{ height: 60, background: "#e5e7eb", marginTop: 5 }}>
-          {/* Google AdSense / AdMob Web placeholder */}
-        </div>
+        <div style={{ height: 60, background: "#e5e7eb", marginTop: 5 }} />
       </div>
     </main>
   );
