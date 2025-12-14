@@ -5,9 +5,10 @@ import { useEffect, useState, useRef } from "react";
  * - Female-only TTS
  * - Multi-language support
  * - Auto timezone
- * - Non-stop alarm + speech loop (auto-stop after 5 minutes)
- * - Snooze, History (Show/Hide), Delete selected history
- * - Non-intrusive Ad layout at bottom
+ * - NON-STOP alarm + voice loop
+ * - Stops ONLY on "Mark as Taken"
+ * - History Show/Hide + Delete
+ * - Non-intrusive Ad layout
  */
 
 function MainBody() {
@@ -15,7 +16,9 @@ function MainBody() {
   // STATES
   // -----------------------
   const [patientName, setPatientName] = useState(
-    typeof window !== "undefined" ? localStorage.getItem("patientName") || "" : ""
+    typeof window !== "undefined"
+      ? localStorage.getItem("patientName") || ""
+      : ""
   );
   const [medicineName, setMedicineName] = useState("");
   const [dose, setDose] = useState("20 mg");
@@ -39,19 +42,16 @@ function MainBody() {
   const [filterDays, setFilterDays] = useState("30");
   const [showHistory, setShowHistory] = useState(false);
 
-  // voice
   const [voiceLang, setVoiceLang] = useState("en-IN");
   const [allVoices, setAllVoices] = useState([]);
 
-  // alarm
   const [isRinging, setIsRinging] = useState(false);
   const [currentReminder, setCurrentReminder] = useState(null);
 
   const speechIntervalRef = useRef(null);
   const alarmSoundRef = useRef(null);
-  const autoStopTimeoutRef = useRef(null);
 
-  const doses = ["10 mg", "20 mg", "50 mg", "100 mg", "250 mg", "500 mg", "0.5 g", "1 g"];
+  const doses = ["10 mg", "20 mg", "50 mg", "100 mg", "250 mg", "500 mg"];
   const hours = Array.from({ length: 12 }, (_, i) =>
     String(i + 1).padStart(2, "0")
   );
@@ -71,7 +71,7 @@ function MainBody() {
   }, []);
 
   // -----------------------
-  // Persist localStorage
+  // Persist storage
   // -----------------------
   useEffect(() => {
     localStorage.setItem("patientName", patientName);
@@ -80,72 +80,86 @@ function MainBody() {
   }, [patientName, reminders, history]);
 
   // -----------------------
-  // Select female voice
+  // Voice selection
   // -----------------------
   const selectFemaleVoice = (lang) =>
     allVoices.find((v) => v.lang === lang) || allVoices[0];
 
   // -----------------------
-  // Alarm + speech
+  // Alarm
   // -----------------------
   const playAlarm = () => {
     const alarm = new Audio("/alarm.mp3");
     alarm.loop = true;
+    alarm.volume = 1.0;
     alarm.play().catch(() => {});
     alarmSoundRef.current = alarm;
   };
 
   const stopAllSound = () => {
     alarmSoundRef.current?.pause();
+    alarmSoundRef.current = null;
     window.speechSynthesis.cancel();
     clearInterval(speechIntervalRef.current);
-    clearTimeout(autoStopTimeoutRef.current);
   };
 
+  // -----------------------
+  // NON-STOP Voice Loop
+  // -----------------------
   const speakLoop = (text) => {
     const voice = selectFemaleVoice(voiceLang);
+
     const speak = () => {
       const u = new SpeechSynthesisUtterance(text);
       u.voice = voice;
       u.lang = voiceLang;
+      u.rate = 1;
+      u.pitch = 1.1;
+      u.volume = 1;
       window.speechSynthesis.speak(u);
     };
+
+    // Speak immediately (twice for attention)
     speak();
-    speechIntervalRef.current = setInterval(speak, 6000);
+    setTimeout(speak, 700);
+
+    // Repeat forever until stopped
+    speechIntervalRef.current = setInterval(speak, 3500);
   };
 
   // -----------------------
-  // Time helpers
+  // Time helper
   // -----------------------
   const getDelay = (h, m, ap) => {
     let hh = parseInt(h);
     if (ap === "PM" && hh !== 12) hh += 12;
     if (ap === "AM" && hh === 12) hh = 0;
-    const t = new Date();
+    const now = new Date();
     const r = new Date();
     r.setHours(hh, parseInt(m), 0, 0);
-    if (r < t) r.setDate(r.getDate() + 1);
-    return r - t;
+    if (r < now) r.setDate(r.getDate() + 1);
+    return r - now;
   };
 
   // -----------------------
-  // Trigger reminder
+  // Trigger reminder (NO AUTO STOP)
   // -----------------------
   const triggerReminder = (med, d) => {
     setIsRinging(true);
     setCurrentReminder({ med, d });
     playAlarm();
-    speakLoop(`Mr ${patientName}, take ${med} ${d}`);
-    autoStopTimeoutRef.current = setTimeout(() => {
-      stopAllSound();
-      setIsRinging(false);
-      alert("You missed your medicine. Please consult doctor.");
-    }, 300000);
+    speakLoop(
+      `Mr ${patientName}, this is your ${med} ${d} time. Please take it now.`
+    );
   };
 
+  // -----------------------
+  // Stop ONLY by user
+  // -----------------------
   useEffect(() => {
     window.stopAlarm = () => {
       stopAllSound();
+
       setHistory((h) => [
         {
           id: Date.now(),
@@ -157,8 +171,11 @@ function MainBody() {
         },
         ...h,
       ]);
+
       setIsRinging(false);
+      setCurrentReminder(null);
     };
+
     return () => delete window.stopAlarm;
   }, [currentReminder, patientName]);
 
@@ -171,6 +188,7 @@ function MainBody() {
       () => triggerReminder(medicineName, dose),
       delay
     );
+
     setReminders((r) => [
       ...r,
       {
@@ -181,7 +199,8 @@ function MainBody() {
         timerId,
       },
     ]);
-    alert("Reminder added");
+
+    alert("✅ Reminder added");
   };
 
   // -----------------------
@@ -209,50 +228,28 @@ function MainBody() {
   return (
     <main style={{ padding: 20 }}>
       <h2>🗣 Voice Language</h2>
-      <select
-        value={voiceLang}
-        onChange={(e) => setVoiceLang(e.target.value)}
-        style={{ width: "100%" }}
-      >
+      <select value={voiceLang} onChange={(e) => setVoiceLang(e.target.value)}>
         <option value="en-IN">English (India)</option>
         <option value="hi-IN">Hindi</option>
         <option value="te-IN">Telugu</option>
       </select>
 
       <h2>👤 Patient</h2>
-      <input
-        value={patientName}
-        onChange={(e) => setPatientName(e.target.value)}
-        style={{ width: "100%" }}
-      />
+      <input value={patientName} onChange={(e) => setPatientName(e.target.value)} />
 
       <h2>💊 Add Medicine</h2>
-      <input
-        value={medicineName}
-        onChange={(e) => setMedicineName(e.target.value)}
-        style={{ width: "100%" }}
-      />
-      <select
-        value={dose}
-        onChange={(e) => setDose(e.target.value)}
-        style={{ width: "100%" }}
-      >
-        {doses.map((d) => (
-          <option key={d}>{d}</option>
-        ))}
+      <input value={medicineName} onChange={(e) => setMedicineName(e.target.value)} />
+      <select value={dose} onChange={(e) => setDose(e.target.value)}>
+        {doses.map((d) => <option key={d}>{d}</option>)}
       </select>
 
       <h2>⏰ Time</h2>
       <div style={{ display: "flex", gap: 10 }}>
         <select value={hour} onChange={(e) => setHour(e.target.value)}>
-          {hours.map((h) => (
-            <option key={h}>{h}</option>
-          ))}
+          {hours.map((h) => <option key={h}>{h}</option>)}
         </select>
         <select value={minute} onChange={(e) => setMinute(e.target.value)}>
-          {minutes.map((m) => (
-            <option key={m}>{m}</option>
-          ))}
+          {minutes.map((m) => <option key={m}>{m}</option>)}
         </select>
         <select value={ampm} onChange={(e) => setAmPm(e.target.value)}>
           <option>AM</option>
@@ -265,9 +262,16 @@ function MainBody() {
       {isRinging && (
         <button
           onClick={() => window.stopAlarm()}
-          style={{ background: "green", color: "#fff", width: "100%" }}
+          style={{
+            background: "green",
+            color: "#fff",
+            width: "100%",
+            padding: 15,
+            fontSize: 18,
+            marginTop: 15,
+          }}
         >
-          ✅ Taken (Stop Alarm)
+          ✅ Mark as Taken (Stop Alarm)
         </button>
       )}
 
@@ -280,10 +284,7 @@ function MainBody() {
 
       {showHistory && (
         <>
-          <select
-            value={filterDays}
-            onChange={(e) => setFilterDays(e.target.value)}
-          >
+          <select value={filterDays} onChange={(e) => setFilterDays(e.target.value)}>
             <option value="30">Last 30 days</option>
             <option value="all">All</option>
           </select>
@@ -291,24 +292,10 @@ function MainBody() {
           {selectedHistory.length > 0 && (
             <button
               onClick={deleteSelectedHistory}
-              style={{
-                marginTop: 10,
-                padding: 10,
-                background: "red",
-                color: "white",
-                width: "100%",
-                borderRadius: 6,
-                fontWeight: "bold",
-              }}
+              style={{ background: "red", color: "#fff", width: "100%" }}
             >
               🗑 Delete Selected ({selectedHistory.length})
             </button>
-          )}
-
-          {selectedHistory.length === 0 && (
-            <p style={{ fontSize: 12, color: "#666" }}>
-              ☑ Select history items to enable delete
-            </p>
           )}
 
           {filteredHistory.map((h) => (
@@ -324,16 +311,7 @@ function MainBody() {
         </>
       )}
 
-      {/* ---------------- Ad Layout ---------------- */}
-      <div
-        style={{
-          marginTop: 30,
-          padding: 15,
-          borderTop: "1px solid #ccc",
-          textAlign: "center",
-          background: "#f8fafc",
-        }}
-      >
+      <div style={{ marginTop: 30, textAlign: "center", background: "#f1f5f9", padding: 15 }}>
         <small>Advertisement</small>
         <div style={{ height: 60, background: "#e5e7eb", marginTop: 5 }} />
       </div>
