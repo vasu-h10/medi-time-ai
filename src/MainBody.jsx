@@ -302,7 +302,6 @@ function MainBody() {
   >
     Ad will be displayed here
   </div>
-</div>
     </main>
   );
 }
