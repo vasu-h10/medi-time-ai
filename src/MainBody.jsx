@@ -270,6 +270,39 @@ function MainBody() {
           ))}
         </>
       )}
+{/* ---------------- Advertisement ---------------- */}
+<div
+  style={{
+    marginTop: 30,
+    padding: 16,
+    borderTop: "1px solid #e5e7eb",
+    background: "#f8fafc",
+    textAlign: "center",
+  }}
+>
+  <small style={{ color: "#64748b" }}>Advertisement</small>
+
+  {/* Web / PWA Ad container */}
+  <div
+    style={{
+      marginTop: 8,
+      height: 60,
+      width: "100%",
+      maxWidth: 360,
+      marginLeft: "auto",
+      marginRight: "auto",
+      background: "#e5e7eb",
+      borderRadius: 6,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      fontSize: 12,
+      color: "#475569",
+    }}
+  >
+    Ad will be displayed here
+  </div>
+</div>
     </main>
   );
 }
