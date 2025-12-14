@@ -2,15 +2,50 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Disclaimer – Medi-Time</title>
+  <title>Disclaimer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
 </head>
-<body style="font-family: Arial; padding: 20px; max-width: 800px; margin: auto;">
-  <h1>Medical Disclaimer</h1>
+<body style="font-family:sans-serif; padding:20px">
 
-  <p>Medi-Time does not provide medical advice.</p>
+  <button onclick="goBack()" style="
+    padding:10px 14px;
+    margin-bottom:16px;
+    border-radius:6px;
+    border:1px solid #ccc;
+    background:#f1f5f9;
+    font-size:14px;
+  ">
+    ← Back
+  </button>
 
-  <p>Always consult a qualified healthcare professional regarding medications.</p>
+  <h2>⚠️ Disclaimer</h2>
 
-  <p>This app is not a substitute for professional medical care.</p>
+  <p>
+    Medi-Time is not a medical device.
+  </p>
+
+  <p>
+    The app does not diagnose, treat, cure, or prevent any disease.
+  </p>
+
+  <p>
+    All reminders are user-configured. The developer is not responsible
+    for missed doses or incorrect usage.
+  </p>
+
+  <p>
+    Always consult a qualified healthcare professional for medical advice.
+  </p>
+
+  <script>
+    function goBack() {
+      if (window.history.length > 1) {
+        window.history.back();
+      } else {
+        window.location.href = "/";
+      }
+    }
+  </script>
+
 </body>
 </html>
