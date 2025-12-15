@@ -218,13 +218,43 @@ export default function MainBody() {
           </div>
         ))}
 
-      {/* ---------- ADVERTISEMENT ---------- */}
-      <div style={{ marginTop: 32, background: "#f1f5f9", padding: 16 }}>
-        <small>Advertisement</small>
-        <div style={{ height: 60, background: "#e5e7eb", marginTop: 8 }}>
-          Ad will appear here
-        </div>
-      </div>
+    {/* ---------- Advertisement ---------- */}
+<div
+  style={{
+    marginTop: 32,
+    padding: 16,
+    background: "#f8fafc",
+    borderRadius: 10,
+    border: "1px solid #e5e7eb",
+  }}
+>
+  <div
+    style={{
+      fontSize: 12,
+      color: "#6b7280",
+      marginBottom: 8,
+      textAlign: "center",
+    }}
+  >
+    Advertisement
+  </div>
+
+  <div
+    style={{
+      height: 64,
+      background: "#e5e7eb",
+      borderRadius: 8,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      fontSize: 14,
+      color: "#374151",
+      fontWeight: 500,
+    }}
+  >
+    Ad will appear here
+  </div>
+</div>
     </main>
   );
 }
