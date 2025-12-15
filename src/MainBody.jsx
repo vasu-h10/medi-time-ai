@@ -221,29 +221,30 @@ const hasTimeConflict = (newTime) => {
 const addReminder = () => {
   const reminderTime = getReminderTimestamp();
 
-  // 🚨 Conflict warning
+  // 🚨 Conflict check (1 minute gap)
   if (hasTimeConflict(reminderTime)) {
     alert("⚠️ Time conflict!\nPlease keep at least 1 minute gap between medicines.");
     return;
   }
 
-  // Success checkmark
+  // ✅ Success feedback
   setAddedSuccess(true);
   setTimeout(() => setAddedSuccess(false), 2000);
 
-  // Schedule reminder
-  reminderTimeoutRef.current = setTimeout(() => {
+  // ✅ Schedule THIS reminder only
+  const timeoutId = setTimeout(() => {
     triggerReminder();
   }, reminderTime - Date.now());
 
-  // Store reminder time for future conflict checks
+  // ✅ Store reminder WITH ITS OWN timeout
   setHistory(h => [
     {
       id: Date.now(),
       medicine: medicineName,
       dose,
       image: medicineImage,
-      time: reminderTime, // 🔑 required
+      time: reminderTime,
+      timeoutId, // 🔑 THIS is the fix
       takenAt: null,
     },
     ...h,
