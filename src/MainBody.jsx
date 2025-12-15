@@ -228,10 +228,10 @@ const notifyUserAlert = () => {
   };
 
   // ---------------- MARK AS TAKEN ----------------
-  const markAsTaken = () => {
+ const markAsTaken = () => {
   stopAlarm();
   stopSpeechRef.current?.();
-  notifyUserAlert(); // ✅ correct function
+  notifyUserAlert(); // ✅ acknowledgement only
   setIsRinging(false);
 };
 // ---------------- ADD REMINDER ----------------
@@ -248,13 +248,13 @@ const addReminder = () => {
   setAddedSuccess(true);
   setTimeout(() => setAddedSuccess(false), 2000);
 
-  // 🔔 Pre-notification (5 min before)
-  schedulePreNotification(reminderTime, medicineName, dose);
+// 🔔 Pre-notification (5 min before) — bell only
+schedulePreNotification(reminderTime);
 
-  // ⏰ Schedule alarm (DO NOT cancel others)
-  setTimeout(() => {
-    triggerReminder();
-  }, reminderTime - Date.now());
+// ⏰ Main reminder — alarm + voice
+setTimeout(() => {
+  triggerReminder();
+}, reminderTime - Date.now());
 
   // 📜 Save reminder
   setHistory(h => [
