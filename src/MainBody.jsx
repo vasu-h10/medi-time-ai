@@ -169,6 +169,65 @@ export default function MainBody() {
           ✅ Mark as Taken
         </button>
       )}
+<hr style={{ margin: "24px 0" }} />
+
+<h2>📜 History</h2>
+
+<button onClick={() => setShowHistory(!showHistory)}>
+  {showHistory ? "🙈 Hide History" : "👁 Show History"}
+</button>
+
+{showHistory && (
+  <div style={{ marginTop: 12 }}>
+    {history.length === 0 && (
+      <p style={{ opacity: 0.6 }}>No reminders yet</p>
+    )}
+
+    {history.map(h => (
+      <div
+        key={h.id}
+        style={{
+          padding: 10,
+          marginBottom: 8,
+          borderRadius: 6,
+          background: "#f8fafc",
+          fontSize: 14,
+        }}
+      >
+        <strong>💊 {h.medicine}</strong> — {h.dose}
+        <br />
+        ⏰ {new Date(h.time).toLocaleString()}
+      </div>
+    ))}
+  </div>
+)}
+<div
+  style={{
+    marginTop: 32,
+    padding: 16,
+    background: "#f1f5f9",
+    textAlign: "center",
+    borderRadius: 8,
+  }}
+>
+  <small style={{ opacity: 0.7 }}>Advertisement</small>
+
+  <div
+    style={{
+      height: 60,
+      marginTop: 8,
+      background: "#e5e7eb",
+      borderRadius: 6,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      fontSize: 13,
+      color: "#555",
+    }}
+  >
+    Ad will appear here
+  </div>
+</div>
     </main>
   );
 }
