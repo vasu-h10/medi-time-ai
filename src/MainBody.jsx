@@ -135,10 +135,18 @@ const scheduleNotification = (time) => {
 const addReminder = () => {
   const time = getReminderTimestamp();
 
+  // 🔓 Unlock audio + speech (REQUIRED – browser rule)
+  try {
+    const a = new Audio();
+    a.play().catch(() => {});
+    window.speechSynthesis?.cancel();
+  } catch {}
+
+  // ✅ UI feedback
   setAddedSuccess(true);
   setTimeout(() => setAddedSuccess(false), 2000);
 
-  // 🔔 Schedule notification (always works)
+  // 🔔 Schedule notification (works even in background)
   scheduleNotification(time);
 
   // 📜 Save history
@@ -153,7 +161,8 @@ const addReminder = () => {
     ...h,
   ]);
 
-  setMedicineImage(null); // reset after save
+  // 🧹 Reset image after save
+  setMedicineImage(null);
 };
   // ---------------- UI ----------------
   return (
