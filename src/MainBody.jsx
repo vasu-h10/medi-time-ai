@@ -47,20 +47,20 @@ export default function MainBody() {
 
   // ---------------- TIME ----------------
   const getReminderTimestamp = () => {
-    let h = parseInt(hour);
+    let h = parseInt(hour, 10);
     if (ampm === "PM" && h !== 12) h += 12;
     if (ampm === "AM" && h === 12) h = 0;
 
     const t = new Date();
-    t.setHours(h, parseInt(minute), 0, 0);
+    t.setHours(h, parseInt(minute, 10), 0, 0);
     if (t < new Date()) t.setDate(t.getDate() + 1);
     return t.getTime();
   };
 
   // ---------------- ALARM ----------------
   const playAlarm = () => {
-    stopAlarm(); // prevent overlap
-    const a = new Audio("/alarm.mp3");
+    stopAlarm();
+    const a = new Audio("/alarm.mp3"); // must exist in /public
     a.loop = true;
     a.volume = 1;
     a.play().catch(() => {});
@@ -77,10 +77,7 @@ export default function MainBody() {
     setIsRinging(true);
     playAlarm();
 
-    if (
-      "speechSynthesis" in window &&
-      document.visibilityState === "visible"
-    ) {
+    if ("speechSynthesis" in window && document.visibilityState === "visible") {
       window.speechSynthesis.cancel();
 
       const u = new SpeechSynthesisUtterance(
@@ -99,7 +96,7 @@ export default function MainBody() {
     window.speechSynthesis?.cancel();
     setIsRinging(false);
 
-    if (Notification.permission === "granted") {
+    if ("Notification" in window && Notification.permission === "granted") {
       new Notification("🔔 Alert Confirmed", {
         body: "Yes, I’m alert!",
         icon: "/icons/icon-192.png",
@@ -109,6 +106,7 @@ export default function MainBody() {
 
   // ---------------- NOTIFICATION ----------------
   const scheduleNotification = (time) => {
+    if (!("Notification" in window)) return;
     if (Notification.permission !== "granted") return;
 
     const delay = time - Date.now();
@@ -120,6 +118,7 @@ export default function MainBody() {
         icon: "/icons/icon-192.png",
       });
 
+      // If app is open, upgrade to alarm + voice
       if (document.visibilityState === "visible") {
         triggerReminder();
       }
@@ -130,7 +129,7 @@ export default function MainBody() {
   const addReminder = () => {
     const time = getReminderTimestamp();
 
-    // unlock audio/speech
+    // unlock audio + speech (browser rule)
     try {
       new Audio().play().catch(() => {});
       window.speechSynthesis?.cancel();
@@ -141,7 +140,7 @@ export default function MainBody() {
 
     scheduleNotification(time);
 
-    setHistory(h => [
+    setHistory((h) => [
       {
         id: Date.now(),
         medicine: medicineName,
@@ -159,31 +158,37 @@ export default function MainBody() {
   return (
     <main style={{ padding: 20 }}>
       <h2>👤 Patient</h2>
-      <input value={patientName} onChange={e => setPatientName(e.target.value)} />
+      <input value={patientName} onChange={(e) => setPatientName(e.target.value)} />
 
       <h2>💊 Medicine</h2>
-      <input value={medicineName} onChange={e => setMedicineName(e.target.value)} />
+      <input value={medicineName} onChange={(e) => setMedicineName(e.target.value)} />
 
-      <select value={dose} onChange={e => setDose(e.target.value)}>
-        {doses.map(d => <option key={d}>{d}</option>)}
+      <select value={dose} onChange={(e) => setDose(e.target.value)}>
+        {doses.map((d) => (
+          <option key={d}>{d}</option>
+        ))}
       </select>
 
       <input type="file" accept="image/*" onChange={onImagePick} />
 
       {medicineImage && (
-        <img src={medicineImage} style={{ width: 120, marginTop: 8 }} />
+        <img src={medicineImage} alt="Medicine" style={{ width: 120, marginTop: 8 }} />
       )}
 
       <h2>⏰ Time</h2>
-      <select value={hour} onChange={e => setHour(e.target.value)}>
-        {hours.map(h => <option key={h}>{h}</option>)}
+      <select value={hour} onChange={(e) => setHour(e.target.value)}>
+        {hours.map((h) => (
+          <option key={h}>{h}</option>
+        ))}
       </select>
 
-      <select value={minute} onChange={e => setMinute(e.target.value)}>
-        {minutes.map(m => <option key={m}>{m}</option>)}
+      <select value={minute} onChange={(e) => setMinute(e.target.value)}>
+        {minutes.map((m) => (
+          <option key={m}>{m}</option>
+        ))}
       </select>
 
-      <select value={ampm} onChange={e => setAmPm(e.target.value)}>
+      <select value={ampm} onChange={(e) => setAmPm(e.target.value)}>
         <option>AM</option>
         <option>PM</option>
       </select>
@@ -195,7 +200,13 @@ export default function MainBody() {
       {isRinging && (
         <button
           onClick={markAsTaken}
-          style={{ marginTop: 20, width: "100%", background: "green", color: "#fff", padding: 14 }}
+          style={{
+            marginTop: 20,
+            width: "100%",
+            background: "green",
+            color: "#fff",
+            padding: 14,
+          }}
         >
           ✅ Mark as Taken
         </button>
@@ -209,16 +220,25 @@ export default function MainBody() {
       </button>
 
       {showHistory &&
-        history.map(h => (
+        history.map((h) => (
           <div key={h.id} style={{ padding: 8 }}>
             💊 <strong>{h.medicine}</strong> — {h.dose}
             <br />
             ⏰ {new Date(h.time).toLocaleString()}
-            {h.image && <img src={h.image} style={{ width: 60, marginTop: 6 }} />}
+            {h.image && (
+              <img src={h.image} style={{ width: 60, marginTop: 6 }} />
+            )}
           </div>
         ))}
 
-      <div style={{ marginTop: 32, padding: 16, background: "#f8fafc", borderRadius: 10 }}>
+      <div
+        style={{
+          marginTop: 32,
+          padding: 16,
+          background: "#f8fafc",
+          borderRadius: 10,
+        }}
+      >
         <small>Advertisement</small>
         <div style={{ height: 64, background: "#e5e7eb", marginTop: 8 }}>
           Ad will appear here
