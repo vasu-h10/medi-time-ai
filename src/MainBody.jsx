@@ -73,77 +73,88 @@ export default function MainBody() {
   };
 
   // ---------------- REMINDER CORE ----------------
-  const triggerReminder = () => {
-    setIsRinging(true);
-    playAlarm();
+const triggerReminder = () => {
+  setIsRinging(true);
 
-    if (
-      "speechSynthesis" in window &&
-      document.visibilityState === "visible"
-    ) {
-      const u = new SpeechSynthesisUtterance(
-        `Hello ${patientName || "there"}. It is time to take your medicine.`
-      );
-      window.speechSynthesis.speak(u);
+  // 🔔 Alarm sound (works after user interaction)
+  playAlarm();
+
+  // 🗣 Voice ONLY if app is visible (Play Store safe)
+  if (
+    "speechSynthesis" in window &&
+    document.visibilityState === "visible"
+  ) {
+    window.speechSynthesis.cancel(); // prevent overlap
+
+    const u = new SpeechSynthesisUtterance(
+      `Hello ${patientName || "there"}. It is time to take your medicine.`
+    );
+
+    window.speechSynthesis.speak(u);
+  }
+};
+
+const markAsTaken = () => {
+  stopAlarm();
+  window.speechSynthesis?.cancel();
+  setIsRinging(false);
+
+  // 🔔 Acknowledgement only (NOT confirming medicine taken)
+  if ("Notification" in window && Notification.permission === "granted") {
+    new Notification("🔔 Alert Confirmed", {
+      body: "Yes, I’m alert!",
+      icon: "/icons/icon-192.png",
+    });
+  }
+};
+
+// ---------------- NOTIFICATION (PRIMARY) ----------------
+const scheduleNotification = (time) => {
+  if (!("Notification" in window)) return;
+  if (Notification.permission !== "granted") return;
+
+  const delay = time - Date.now();
+  if (delay <= 0) return;
+
+  setTimeout(() => {
+    // 🔔 System notification (bell handled by OS)
+    new Notification("🔔 Medicine Reminder", {
+      body: "Tap to open the reminder",
+      icon: "/icons/icon-192.png",
+      silent: false,
+    });
+
+    // If app is already open → trigger alarm + voice
+    if (document.visibilityState === "visible") {
+      triggerReminder();
     }
-  };
+  }, delay);
+};
 
-  const markAsTaken = () => {
-    stopAlarm();
-    window.speechSynthesis?.cancel();
-    setIsRinging(false);
+// ---------------- ADD REMINDER ----------------
+const addReminder = () => {
+  const time = getReminderTimestamp();
 
-    if (Notification.permission === "granted") {
-      new Notification("🔔 Alert Confirmed", {
-        body: "Yes, I’m alert!",
-        icon: "/icons/icon-192.png",
-      });
-    }
-  };
+  setAddedSuccess(true);
+  setTimeout(() => setAddedSuccess(false), 2000);
 
-  // ---------------- NOTIFICATION ----------------
-  const scheduleNotification = (time) => {
-    if (!("Notification" in window)) return;
-    if (Notification.permission !== "granted") return;
+  // 🔔 Schedule notification (always works)
+  scheduleNotification(time);
 
-    const delay = time - Date.now();
-    if (delay <= 0) return;
+  // 📜 Save history
+  setHistory(h => [
+    {
+      id: Date.now(),
+      medicine: medicineName,
+      dose,
+      time,
+      image: medicineImage || null,
+    },
+    ...h,
+  ]);
 
-    setTimeout(() => {
-      new Notification("🔔 Medicine Reminder", {
-        body: "Tap to open the reminder",
-        icon: "/icons/icon-192.png",
-      });
-
-      if (document.visibilityState === "visible") {
-        triggerReminder();
-      }
-    }, delay);
-  };
-
-  // ---------------- ADD REMINDER ----------------
-  const addReminder = () => {
-    const time = getReminderTimestamp();
-
-    setAddedSuccess(true);
-    setTimeout(() => setAddedSuccess(false), 2000);
-
-    scheduleNotification(time);
-
-    setHistory(h => [
-      {
-        id: Date.now(),
-        medicine: medicineName,
-        dose,
-        time,
-        image: medicineImage,
-      },
-      ...h,
-    ]);
-
-    setMedicineImage(null); // reset after save
-  };
-
+  setMedicineImage(null); // reset after save
+};
   // ---------------- UI ----------------
   return (
     <main style={{ padding: 20 }}>
