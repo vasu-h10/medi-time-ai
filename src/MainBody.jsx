@@ -179,28 +179,30 @@ export default function MainBody() {
 
 {showHistory && (
   <div style={{ marginTop: 12 }}>
-    {history.length === 0 && (
+    {history.length === 0 ? (
       <p style={{ opacity: 0.6 }}>No reminders yet</p>
+    ) : (
+      history.map(h => (
+        <div
+          key={h.id}
+          style={{
+            padding: 10,
+            marginBottom: 8,
+            borderRadius: 6,
+            background: "#f8fafc",
+            fontSize: 14,
+          }}
+        >
+          <strong>💊 {h.medicine}</strong> — {h.dose}
+          <br />
+          ⏰ {h.time ? new Date(h.time).toLocaleString() : "—"}
+        </div>
+      ))
     )}
-
-    {history.map(h => (
-      <div
-        key={h.id}
-        style={{
-          padding: 10,
-          marginBottom: 8,
-          borderRadius: 6,
-          background: "#f8fafc",
-          fontSize: 14,
-        }}
-      >
-        <strong>💊 {h.medicine}</strong> — {h.dose}
-        <br />
-        ⏰ {new Date(h.time).toLocaleString()}
-      </div>
-    ))}
   </div>
 )}
+
+{/* ---------- Advertisement ---------- */}
 <div
   style={{
     marginTop: 32,
