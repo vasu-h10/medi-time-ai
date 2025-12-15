@@ -35,15 +35,13 @@ export default function MainBody() {
     }
   }, []);
 
-  // ---------------- IMAGE PICK (GALLERY) ----------------
+  // ---------------- IMAGE PICK ----------------
   const onImagePick = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = () => {
-      setMedicineImage(reader.result); // base64 image
-    };
+    reader.onload = () => setMedicineImage(reader.result);
     reader.readAsDataURL(file);
   };
 
@@ -61,8 +59,10 @@ export default function MainBody() {
 
   // ---------------- ALARM ----------------
   const playAlarm = () => {
+    stopAlarm(); // prevent overlap
     const a = new Audio("/alarm.mp3");
     a.loop = true;
+    a.volume = 1;
     a.play().catch(() => {});
     alarmRef.current = a;
   };
@@ -73,97 +73,88 @@ export default function MainBody() {
   };
 
   // ---------------- REMINDER CORE ----------------
-const triggerReminder = () => {
-  setIsRinging(true);
+  const triggerReminder = () => {
+    setIsRinging(true);
+    playAlarm();
 
-  // 🔔 Alarm sound (works after user interaction)
-  playAlarm();
+    if (
+      "speechSynthesis" in window &&
+      document.visibilityState === "visible"
+    ) {
+      window.speechSynthesis.cancel();
 
-  // 🗣 Voice ONLY if app is visible (Play Store safe)
-  if (
-    "speechSynthesis" in window &&
-    document.visibilityState === "visible"
-  ) {
-    window.speechSynthesis.cancel(); // prevent overlap
+      const u = new SpeechSynthesisUtterance(
+        `Hello ${patientName || "there"}. It is time to take your medicine.`
+      );
+      u.lang = "en-IN";
+      u.rate = 0.95;
+      u.pitch = 1;
 
-    const u = new SpeechSynthesisUtterance(
-      `Hello ${patientName || "there"}. It is time to take your medicine.`
-    );
-
-    window.speechSynthesis.speak(u);
-  }
-};
-
-const markAsTaken = () => {
-  stopAlarm();
-  window.speechSynthesis?.cancel();
-  setIsRinging(false);
-
-  // 🔔 Acknowledgement only (NOT confirming medicine taken)
-  if ("Notification" in window && Notification.permission === "granted") {
-    new Notification("🔔 Alert Confirmed", {
-      body: "Yes, I’m alert!",
-      icon: "/icons/icon-192.png",
-    });
-  }
-};
-
-// ---------------- NOTIFICATION (PRIMARY) ----------------
-const scheduleNotification = (time) => {
-  if (!("Notification" in window)) return;
-  if (Notification.permission !== "granted") return;
-
-  const delay = time - Date.now();
-  if (delay <= 0) return;
-
-  setTimeout(() => {
-    // 🔔 System notification (bell handled by OS)
-    new Notification("🔔 Medicine Reminder", {
-      body: "Tap to open the reminder",
-      icon: "/icons/icon-192.png",
-      silent: false,
-    });
-
-    // If app is already open → trigger alarm + voice
-    if (document.visibilityState === "visible") {
-      triggerReminder();
+      window.speechSynthesis.speak(u);
     }
-  }, delay);
-};
+  };
 
-// ---------------- ADD REMINDER ----------------
-const addReminder = () => {
-  const time = getReminderTimestamp();
-
-  // 🔓 Unlock audio + speech (REQUIRED – browser rule)
-  try {
-    const a = new Audio();
-    a.play().catch(() => {});
+  const markAsTaken = () => {
+    stopAlarm();
     window.speechSynthesis?.cancel();
-  } catch {}
+    setIsRinging(false);
 
-  // ✅ UI feedback
-  setAddedSuccess(true);
-  setTimeout(() => setAddedSuccess(false), 2000);
+    if (Notification.permission === "granted") {
+      new Notification("🔔 Alert Confirmed", {
+        body: "Yes, I’m alert!",
+        icon: "/icons/icon-192.png",
+      });
+    }
+  };
 
-  // 🔔 Schedule notification (works even in background)
-  scheduleNotification(time);
+  // ---------------- NOTIFICATION ----------------
+  const scheduleNotification = (time) => {
+    if (Notification.permission !== "granted") return;
 
-  // 📜 Save history
-  setHistory(h => [
-    {
-      id: Date.now(),
-      medicine: medicineName,
-      dose,
-      time,
-      image: medicineImage || null,
-    },
-    ...h,
-  ]);
+    const delay = time - Date.now();
+    if (delay <= 0) return;
 
-  // 🧹 Reset image after save
-  setMedicineImage(null);
-};
+    setTimeout(() => {
+      new Notification("🔔 Medicine Reminder", {
+        body: "Tap to open the reminder",
+        icon: "/icons/icon-192.png",
+      });
+
+      if (document.visibilityState === "visible") {
+        triggerReminder();
+      }
+    }, delay);
+  };
+
+  // ---------------- ADD REMINDER ----------------
+  const addReminder = () => {
+    const time = getReminderTimestamp();
+
+    // unlock audio/speech
+    try {
+      new Audio().play().catch(() => {});
+      window.speechSynthesis?.cancel();
+    } catch {}
+
+    setAddedSuccess(true);
+    setTimeout(() => setAddedSuccess(false), 2000);
+
+    scheduleNotification(time);
+
+    setHistory(h => [
+      {
+        id: Date.now(),
+        medicine: medicineName,
+        dose,
+        time,
+        image: medicineImage,
+      },
+      ...h,
+    ]);
+
+    setMedicineImage(null);
+  };
+
   // ---------------- UI ----------------
   return (
     <main style={{ padding: 20 }}>
@@ -177,15 +168,10 @@ const addReminder = () => {
         {doses.map(d => <option key={d}>{d}</option>)}
       </select>
 
-      {/* IMAGE UPLOAD */}
       <input type="file" accept="image/*" onChange={onImagePick} />
 
       {medicineImage && (
-        <img
-          src={medicineImage}
-          alt="Medicine"
-          style={{ width: 120, marginTop: 8, borderRadius: 6 }}
-        />
+        <img src={medicineImage} style={{ width: 120, marginTop: 8 }} />
       )}
 
       <h2>⏰ Time</h2>
@@ -215,7 +201,6 @@ const addReminder = () => {
         </button>
       )}
 
-      {/* ---------- HISTORY ---------- */}
       <hr style={{ margin: "24px 0" }} />
 
       <h2>📜 History</h2>
@@ -229,52 +214,16 @@ const addReminder = () => {
             💊 <strong>{h.medicine}</strong> — {h.dose}
             <br />
             ⏰ {new Date(h.time).toLocaleString()}
-            {h.image && (
-              <img
-                src={h.image}
-                style={{ width: 60, marginTop: 6, borderRadius: 4 }}
-              />
-            )}
+            {h.image && <img src={h.image} style={{ width: 60, marginTop: 6 }} />}
           </div>
         ))}
 
-    {/* ---------- Advertisement ---------- */}
-<div
-  style={{
-    marginTop: 32,
-    padding: 16,
-    background: "#f8fafc",
-    borderRadius: 10,
-    border: "1px solid #e5e7eb",
-  }}
->
-  <div
-    style={{
-      fontSize: 12,
-      color: "#6b7280",
-      marginBottom: 8,
-      textAlign: "center",
-    }}
-  >
-    Advertisement
-  </div>
-
-  <div
-    style={{
-      height: 64,
-      background: "#e5e7eb",
-      borderRadius: 8,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      fontSize: 14,
-      color: "#374151",
-      fontWeight: 500,
-    }}
-  >
-    Ad will appear here
-  </div>
-</div>
+      <div style={{ marginTop: 32, padding: 16, background: "#f8fafc", borderRadius: 10 }}>
+        <small>Advertisement</small>
+        <div style={{ height: 64, background: "#e5e7eb", marginTop: 8 }}>
+          Ad will appear here
+        </div>
+      </div>
     </main>
   );
 }
