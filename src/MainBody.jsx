@@ -4,11 +4,13 @@ import { useEffect, useState, useRef } from "react";
  * MainBody.jsx — FINAL
  * - Female-first TTS (safe fallback)
  * - 9 Indian languages (full sentences)
- * - NON-STOP alarm + chained speech (NO CUTS)
+ * - NON-STOP alarm + chained speech
  * - Stops ONLY on "Mark as Taken"
  * - Gallery image upload (compressed)
  * - History show/hide + multi delete
  * - Add Reminder success checkmark
+ * - Pre & Post Notifications
+ * - Time conflict protection (1 min)
  * - Play Store / TWA safe
  */
 
@@ -35,14 +37,13 @@ function MainBody() {
   const [voices, setVoices] = useState([]);
 
   const [isRinging, setIsRinging] = useState(false);
-  const [addedSuccess, setAddedSuccess] = useState(false); // ✅ NEW
+  const [addedSuccess, setAddedSuccess] = useState(false);
 
   const alarmRef = useRef(null);
   const stopSpeechRef = useRef(null);
-  const reminderTimeoutRef = useRef(null);
 
   // ---------------- CONSTANTS ----------------
-  const doses = ["10 mg", "20 mg", "50 mg", "100 mg", "250 mg", "500 mg"];
+  const doses = ["5 mg","10 mg","20 mg","50 mg","100 mg","250 mg","500 mg","650 mg"];
   const hours = Array.from({ length: 12 }, (_, i) =>
     String(i + 1).padStart(2, "0")
   );
@@ -79,9 +80,9 @@ function MainBody() {
       d: dose,
     });
 
-  // ---------------- LOAD VOICES ----------------
+  // ---------------- VOICES ----------------
   useEffect(() => {
-    const load = () => setVoices(window.speechSynthesis.getVoices() || []);
+    const load = () => setVoices(window.speechSynthesis.getVoices());
     load();
     window.speechSynthesis.addEventListener("voiceschanged", load);
     return () =>
@@ -94,7 +95,40 @@ function MainBody() {
     localStorage.setItem("patientName", patientName);
   }, [history, patientName]);
 
-  // ---------------- VOICE PICKER ----------------
+  // ---------------- NOTIFICATIONS ----------------
+  useEffect(() => {
+    if ("Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+  }, []);
+
+  const schedulePreNotification = (time, medicine, dose) => {
+    if (!("Notification" in window)) return;
+    if (Notification.permission !== "granted") return;
+
+    const FIVE_MIN = 5 * 60 * 1000;
+    const delay = time - Date.now() - FIVE_MIN;
+    if (delay <= 0) return;
+
+    setTimeout(() => {
+      new Notification("💊 Upcoming Medicine", {
+        body: `${medicine} ${dose} in 5 minutes`,
+        icon: "/icons/icon-192.png",
+      });
+    }, delay);
+  };
+
+  const notifyMedicineTaken = (medicine, dose) => {
+    if (!("Notification" in window)) return;
+    if (Notification.permission !== "granted") return;
+
+    new Notification("✅ Medicine Taken", {
+      body: `${medicine} ${dose} recorded successfully`,
+      icon: "/icons/icon-192.png",
+    });
+  };
+
+  // ---------------- VOICE ----------------
   const selectVoice = (lang) =>
     voices.find(v => v.lang === lang) ||
     voices.find(v => v.lang.startsWith(lang.split("-")[0])) ||
@@ -115,7 +149,6 @@ function MainBody() {
     alarmRef.current = null;
   };
 
-  // ---------------- SAFE CHAINED SPEECH ----------------
   const speakLoop = (text) => {
     const voice = selectVoice(voiceLang);
     let stopped = false;
@@ -137,15 +170,21 @@ function MainBody() {
   };
 
   // ---------------- TIME ----------------
-  const getDelay = () => {
+  const getReminderTimestamp = () => {
     let h = parseInt(hour);
     if (ampm === "PM" && h !== 12) h += 12;
     if (ampm === "AM" && h === 12) h = 0;
+
     const now = new Date();
     const t = new Date();
     t.setHours(h, parseInt(minute), 0, 0);
     if (t < now) t.setDate(t.getDate() + 1);
-    return t - now;
+    return t.getTime();
+  };
+
+  const hasTimeConflict = (newTime) => {
+    const ONE_MIN = 60 * 1000;
+    return history.some(h => h.time && Math.abs(h.time - newTime) < ONE_MIN);
   };
 
   // ---------------- IMAGE PICK ----------------
@@ -178,10 +217,29 @@ function MainBody() {
     stopSpeechRef.current = speakLoop(getReminderText());
   };
 
-  // ---------------- STOP ----------------
+  // ---------------- MARK AS TAKEN ----------------
   const markAsTaken = () => {
     stopAlarm();
     stopSpeechRef.current?.();
+    notifyMedicineTaken(medicineName, dose);
+    setIsRinging(false);
+  };
+
+  // ---------------- ADD REMINDER ----------------
+  const addReminder = () => {
+    const reminderTime = getReminderTimestamp();
+
+    if (hasTimeConflict(reminderTime)) {
+      alert("⚠️ Please keep at least 1 minute gap between medicines.");
+      return;
+    }
+
+    setAddedSuccess(true);
+    setTimeout(() => setAddedSuccess(false), 2000);
+
+    schedulePreNotification(reminderTime, medicineName, dose);
+
+    setTimeout(triggerReminder, reminderTime - Date.now());
 
     setHistory(h => [
       {
@@ -189,34 +247,12 @@ function MainBody() {
         medicine: medicineName,
         dose,
         image: medicineImage,
-        takenAt: new Date().toLocaleString(),
+        time: reminderTime,
+        takenAt: null,
       },
       ...h,
     ]);
-
-    setIsRinging(false);
   };
-
-  // 🔹 Convert selected time to timestamp
-const getReminderTimestamp = () => {
-  let h = parseInt(hour);
-  if (ampm === "PM" && h !== 12) h += 12;
-  if (ampm === "AM" && h === 12) h = 0;
-
-  const now = new Date();
-  const t = new Date();
-  t.setHours(h, parseInt(minute), 0, 0);
-  if (t < now) t.setDate(t.getDate() + 1);
-
-  return t.getTime();
-};
-
-// 🔹 Detect 1-minute conflict
-const hasTimeConflict = (newTime) => {
-  const ONE_MIN = 60 * 1000;
-  return history.some(h => h.time && Math.abs(h.time - newTime) < ONE_MIN);
-};
-
 // ---------------- ADD REMINDER ----------------
 const addReminder = () => {
   const reminderTime = getReminderTimestamp();
