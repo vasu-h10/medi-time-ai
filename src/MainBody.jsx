@@ -224,35 +224,6 @@ function MainBody() {
     notifyMedicineTaken(medicineName, dose);
     setIsRinging(false);
   };
-
-  // ---------------- ADD REMINDER ----------------
-  const addReminder = () => {
-    const reminderTime = getReminderTimestamp();
-
-    if (hasTimeConflict(reminderTime)) {
-      alert("⚠️ Please keep at least 1 minute gap between medicines.");
-      return;
-    }
-
-    setAddedSuccess(true);
-    setTimeout(() => setAddedSuccess(false), 2000);
-
-    schedulePreNotification(reminderTime, medicineName, dose);
-
-    setTimeout(triggerReminder, reminderTime - Date.now());
-
-    setHistory(h => [
-      {
-        id: Date.now(),
-        medicine: medicineName,
-        dose,
-        image: medicineImage,
-        time: reminderTime,
-        takenAt: null,
-      },
-      ...h,
-    ]);
-  };
 // ---------------- ADD REMINDER ----------------
 const addReminder = () => {
   const reminderTime = getReminderTimestamp();
