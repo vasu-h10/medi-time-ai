@@ -1,14 +1,5 @@
 import { useEffect, useState, useRef } from "react";
 
-/**
- * MainBody.jsx — FINAL (PLAY STORE SAFE)
- * -------------------------------------
- * 🔔 Notification-first reminder system
- * ⏰ Alarm + voice only when app is active
- * ❌ No SMS, no backend, no background abuse
- * ✅ Works on independent local devices
- */
-
 export default function MainBody() {
   // ---------------- STATE ----------------
   const [patientName, setPatientName] = useState(
@@ -23,6 +14,12 @@ export default function MainBody() {
 
   const [isRinging, setIsRinging] = useState(false);
   const [addedSuccess, setAddedSuccess] = useState(false);
+
+  // ✅ MISSING STATES (CAUSE OF BLANK SCREEN)
+  const [history, setHistory] = useState(
+    JSON.parse(localStorage.getItem("history") || "[]")
+  );
+  const [showHistory, setShowHistory] = useState(false);
 
   const alarmRef = useRef(null);
 
@@ -42,6 +39,12 @@ export default function MainBody() {
     }
   }, []);
 
+  // ---------------- STORAGE ----------------
+  useEffect(() => {
+    localStorage.setItem("history", JSON.stringify(history));
+    localStorage.setItem("patientName", patientName);
+  }, [history, patientName]);
+
   // ---------------- TIME ----------------
   const getReminderTimestamp = () => {
     let h = parseInt(hour);
@@ -54,7 +57,7 @@ export default function MainBody() {
     return t.getTime();
   };
 
-  // ---------------- NOTIFICATION (PRIMARY) ----------------
+  // ---------------- NOTIFICATION ----------------
   const schedulePreNotification = (time) => {
     if (!("Notification" in window)) return;
     if (Notification.permission !== "granted") return;
@@ -66,12 +69,11 @@ export default function MainBody() {
       new Notification("🔔 Reminder Alert", {
         body: "5 minutes remaining",
         icon: "/icons/icon-192.png",
-        silent: false,
       });
     }, delay);
   };
 
-  // ---------------- ALARM (BONUS) ----------------
+  // ---------------- ALARM ----------------
   const playAlarm = () => {
     const audio = new Audio("/alarm.mp3");
     audio.loop = true;
@@ -119,9 +121,18 @@ export default function MainBody() {
 
     schedulePreNotification(time);
 
-    setTimeout(() => {
-      triggerReminder();
-    }, time - Date.now());
+    setTimeout(triggerReminder, time - Date.now());
+
+    // ✅ SAVE TO HISTORY
+    setHistory(h => [
+      {
+        id: Date.now(),
+        medicine: medicineName,
+        dose,
+        time,
+      },
+      ...h,
+    ]);
   };
 
   // ---------------- UI ----------------
@@ -169,67 +180,71 @@ export default function MainBody() {
           ✅ Mark as Taken
         </button>
       )}
-<hr style={{ margin: "24px 0" }} />
+return (
+  <main style={{ padding: 20 }}>
 
-<h2>📜 History</h2>
+    {/* ---------- HISTORY ---------- */}
+    <hr style={{ margin: "24px 0" }} />
 
-<button onClick={() => setShowHistory(!showHistory)}>
-  {showHistory ? "🙈 Hide History" : "👁 Show History"}
-</button>
+    <h2>📜 History</h2>
 
-{showHistory && (
-  <div style={{ marginTop: 12 }}>
-    {history.length === 0 ? (
-      <p style={{ opacity: 0.6 }}>No reminders yet</p>
-    ) : (
-      history.map(h => (
-        <div
-          key={h.id}
-          style={{
-            padding: 10,
-            marginBottom: 8,
-            borderRadius: 6,
-            background: "#f8fafc",
-            fontSize: 14,
-          }}
-        >
-          <strong>💊 {h.medicine}</strong> — {h.dose}
-          <br />
-          ⏰ {h.time ? new Date(h.time).toLocaleString() : "—"}
-        </div>
-      ))
+    <button onClick={() => setShowHistory(!showHistory)}>
+      {showHistory ? "🙈 Hide History" : "👁 Show History"}
+    </button>
+
+    {showHistory && (
+      <div style={{ marginTop: 12 }}>
+        {history.length === 0 ? (
+          <p style={{ opacity: 0.6 }}>No reminders yet</p>
+        ) : (
+          history.map(h => (
+            <div
+              key={h.id}
+              style={{
+                padding: 10,
+                marginBottom: 8,
+                borderRadius: 6,
+                background: "#f8fafc",
+                fontSize: 14,
+              }}
+            >
+              💊 <strong>{h.medicine}</strong> — {h.dose}
+              <br />
+              ⏰ {h.time ? new Date(h.time).toLocaleString() : "—"}
+            </div>
+          ))
+        )}
+      </div>
     )}
-  </div>
-)}
 
-{/* ---------- Advertisement ---------- */}
-<div
-  style={{
-    marginTop: 32,
-    padding: 16,
-    background: "#f1f5f9",
-    textAlign: "center",
-    borderRadius: 8,
-  }}
->
-  <small style={{ opacity: 0.7 }}>Advertisement</small>
+    {/* ---------- ADVERTISEMENT ---------- */}
+    <div
+      style={{
+        marginTop: 32,
+        padding: 16,
+        background: "#f1f5f9",
+        textAlign: "center",
+        borderRadius: 8,
+      }}
+    >
+      <small style={{ opacity: 0.7 }}>Advertisement</small>
 
-  <div
-    style={{
-      height: 60,
-      marginTop: 8,
-      background: "#e5e7eb",
-      borderRadius: 6,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      fontSize: 13,
-      color: "#555",
-    }}
-  >
-    Ad will appear here
-  </div>
-</div>
-    </main>
-  );
-}
+      <div
+        style={{
+          height: 60,
+          marginTop: 8,
+          background: "#e5e7eb",
+          borderRadius: 6,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: 13,
+          color: "#555",
+        }}
+      >
+        Ad will appear here
+      </div>
+    </div>
+
+  </main>
+);
