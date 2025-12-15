@@ -136,58 +136,68 @@ export default function MainBody() {
   };
 
   // ---------------- UI ----------------
-  return (
-    <main style={{ padding: 20 }}>
-      <h2>👤 Patient</h2>
-      <input value={patientName} onChange={e => setPatientName(e.target.value)} />
-
-      <h2>💊 Medicine</h2>
-      <input value={medicineName} onChange={e => setMedicineName(e.target.value)} />
-
-      <select value={dose} onChange={e => setDose(e.target.value)}>
-        {doses.map(d => <option key={d}>{d}</option>)}
-      </select>
-
-      <h2>⏰ Time</h2>
-      <select value={hour} onChange={e => setHour(e.target.value)}>
-        {hours.map(h => <option key={h}>{h}</option>)}
-      </select>
-
-      <select value={minute} onChange={e => setMinute(e.target.value)}>
-        {minutes.map(m => <option key={m}>{m}</option>)}
-      </select>
-
-      <select value={ampm} onChange={e => setAmPm(e.target.value)}>
-        <option>AM</option>
-        <option>PM</option>
-      </select>
-
-      <button onClick={addReminder}>
-        {addedSuccess ? "☑ Reminder Added" : "➕ Add Reminder"}
-      </button>
-
-      {isRinging && (
-        <button
-          onClick={markAsTaken}
-          style={{
-            marginTop: 20,
-            width: "100%",
-            background: "green",
-            color: "#fff",
-            padding: 14,
-          }}
-        >
-          ✅ Mark as Taken
-        </button>
-      )}
 return (
   <main style={{ padding: 20 }}>
+
+    <h2>👤 Patient</h2>
+    <input
+      value={patientName}
+      onChange={e => setPatientName(e.target.value)}
+    />
+
+    <h2>💊 Medicine</h2>
+    <input
+      value={medicineName}
+      onChange={e => setMedicineName(e.target.value)}
+    />
+
+    <select value={dose} onChange={e => setDose(e.target.value)}>
+      {doses.map(d => (
+        <option key={d}>{d}</option>
+      ))}
+    </select>
+
+    <h2>⏰ Time</h2>
+    <select value={hour} onChange={e => setHour(e.target.value)}>
+      {hours.map(h => (
+        <option key={h}>{h}</option>
+      ))}
+    </select>
+
+    <select value={minute} onChange={e => setMinute(e.target.value)}>
+      {minutes.map(m => (
+        <option key={m}>{m}</option>
+      ))}
+    </select>
+
+    <select value={ampm} onChange={e => setAmPm(e.target.value)}>
+      <option>AM</option>
+      <option>PM</option>
+    </select>
+
+    <button onClick={addReminder}>
+      {addedSuccess ? "☑ Reminder Added" : "➕ Add Reminder"}
+    </button>
+
+    {isRinging && (
+      <button
+        onClick={markAsTaken}
+        style={{
+          marginTop: 20,
+          width: "100%",
+          background: "green",
+          color: "#fff",
+          padding: 14,
+        }}
+      >
+        ✅ Mark as Taken
+      </button>
+    )}
 
     {/* ---------- HISTORY ---------- */}
     <hr style={{ margin: "24px 0" }} />
 
     <h2>📜 History</h2>
-
     <button onClick={() => setShowHistory(!showHistory)}>
       {showHistory ? "🙈 Hide History" : "👁 Show History"}
     </button>
@@ -210,7 +220,7 @@ return (
             >
               💊 <strong>{h.medicine}</strong> — {h.dose}
               <br />
-              ⏰ {h.time ? new Date(h.time).toLocaleString() : "—"}
+              ⏰ {new Date(h.time).toLocaleString()}
             </div>
           ))
         )}
