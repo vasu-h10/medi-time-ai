@@ -96,37 +96,50 @@ function MainBody() {
   }, [history, patientName]);
 
   // ---------------- NOTIFICATIONS ----------------
-  useEffect(() => {
-    if ("Notification" in window && Notification.permission === "default") {
-      Notification.requestPermission();
-    }
-  }, []);
+useEffect(() => {
+  if ("Notification" in window && Notification.permission === "default") {
+    Notification.requestPermission();
+  }
+}, []);
 
-  const schedulePreNotification = (time, medicine, dose) => {
-    if (!("Notification" in window)) return;
-    if (Notification.permission !== "granted") return;
+/**
+ * 🔔 Pre-Reminder Notification
+ * Triggered 5 minutes before alarm
+ * Bell + image only (NO voice)
+ */
+const schedulePreNotification = (time, medicine, dose) => {
+  if (!("Notification" in window)) return;
+  if (Notification.permission !== "granted") return;
 
-    const FIVE_MIN = 5 * 60 * 1000;
-    const delay = time - Date.now() - FIVE_MIN;
-    if (delay <= 0) return;
+  const FIVE_MIN = 5 * 60 * 1000;
+  const delay = time - Date.now() - FIVE_MIN;
 
-    setTimeout(() => {
-      new Notification("💊 Upcoming Medicine", {
-        body: `${medicine} ${dose} in 5 minutes`,
-        icon: "/icons/icon-192.png",
-      });
-    }, delay);
-  };
+  if (delay <= 0) return;
 
-  const notifyMedicineTaken = (medicine, dose) => {
-    if (!("Notification" in window)) return;
-    if (Notification.permission !== "granted") return;
-
-    new Notification("✅ Medicine Taken", {
-      body: `${medicine} ${dose} recorded successfully`,
+  setTimeout(() => {
+    new Notification("🔔 Reminder Alert", {
+      body: `5 minutes remaining`,
       icon: "/icons/icon-192.png",
+      silent: false, // uses system notification sound (bell)
     });
-  };
+  }, delay);
+};
+
+/**
+ * ✅ User Acknowledgement Notification
+ * Triggered when user presses "Mark as Taken"
+ * DOES NOT say medicine taken
+ */
+const notifyUserAlert = () => {
+  if (!("Notification" in window)) return;
+  if (Notification.permission !== "granted") return;
+
+  new Notification("🔔 Alert Confirmed", {
+    body: "Yes, I’m alert!",
+    icon: "/icons/icon-192.png",
+    silent: false,
+  });
+};
 
   // ---------------- VOICE ----------------
   const selectVoice = (lang) =>
