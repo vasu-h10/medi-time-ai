@@ -245,13 +245,23 @@ return (
       </select>
 
       <h2>⏰ Time</h2>
-      <select value={hour} onChange={e => setHour(e.target.value)}>{hours.map(h => <option key={h}>{h}</option>)}</select>
-      <select value={minute} onChange={e => setMinute(e.target.value)}>{minutes.map(m => <option key={m}>{m}</option>)}</select>
-      <select value={ampm} onChange={e => setAmPm(e.target.value)}><option>AM</option><option>PM</option></select>
 
-      <button onClick={addReminder}>
-        {addedSuccess ? "☑ Reminder Added" : "➕ Add Reminder"}
-      </button>
+<select value={hour} onChange={e => setHour(e.target.value)}>
+  {hours.map(h => <option key={h}>{h}</option>)}
+</select>
+
+<select value={minute} onChange={e => setMinute(e.target.value)}>
+  {minutes.map(m => <option key={m}>{m}</option>)}
+</select>
+
+<select value={ampm} onChange={e => setAmPm(e.target.value)}>
+  <option>AM</option>
+  <option>PM</option>
+</select>
+
+<button onClick={addReminder}>
+  {addedSuccess ? "☑ Reminder Added" : "➕ Add Reminder"}
+</button>
 
      {isRinging && (
   <div
