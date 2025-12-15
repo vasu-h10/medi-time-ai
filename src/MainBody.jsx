@@ -104,10 +104,10 @@ useEffect(() => {
 
 /**
  * 🔔 Pre-Reminder Notification
- * Triggered 5 minutes before alarm
- * Bell + image only (NO voice)
+ * Triggered 5 minutes before reminder time
+ * Bell + image only (NO voice, NO medicine name)
  */
-const schedulePreNotification = (time, medicine, dose) => {
+const schedulePreNotification = (time) => {
   if (!("Notification" in window)) return;
   if (Notification.permission !== "granted") return;
 
@@ -118,9 +118,9 @@ const schedulePreNotification = (time, medicine, dose) => {
 
   setTimeout(() => {
     new Notification("🔔 Reminder Alert", {
-      body: `5 minutes remaining`,
+      body: "5 minutes remaining",
       icon: "/icons/icon-192.png",
-      silent: false, // uses system notification sound (bell)
+      silent: false, // 🔔 system bell sound
     });
   }, delay);
 };
@@ -128,7 +128,7 @@ const schedulePreNotification = (time, medicine, dose) => {
 /**
  * ✅ User Acknowledgement Notification
  * Triggered when user presses "Mark as Taken"
- * DOES NOT say medicine taken
+ * DOES NOT confirm medicine taken (safety)
  */
 const notifyUserAlert = () => {
   if (!("Notification" in window)) return;
@@ -140,7 +140,6 @@ const notifyUserAlert = () => {
     silent: false,
   });
 };
-
   // ---------------- VOICE ----------------
   const selectVoice = (lang) =>
     voices.find(v => v.lang === lang) ||
@@ -232,11 +231,11 @@ const notifyUserAlert = () => {
 
   // ---------------- MARK AS TAKEN ----------------
   const markAsTaken = () => {
-    stopAlarm();
-    stopSpeechRef.current?.();
-    notifyMedicineTaken(medicineName, dose);
-    setIsRinging(false);
-  };
+  stopAlarm();
+  stopSpeechRef.current?.();
+  notifyUserAlert(); // ✅ correct function
+  setIsRinging(false);
+};
 // ---------------- ADD REMINDER ----------------
 const addReminder = () => {
   const reminderTime = getReminderTimestamp();
