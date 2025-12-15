@@ -253,11 +253,51 @@ return (
         {addedSuccess ? "☑ Reminder Added" : "➕ Add Reminder"}
       </button>
 
-      {isRinging && (
-        <button onClick={markAsTaken} style={{ background: "green", color: "#fff", width: "100%", marginTop: 10 }}>
-          ✅ Mark as Taken
-        </button>
-      )}
+     {isRinging && (
+  <div
+    style={{
+      marginTop: 16,
+      padding: 12,
+      border: "2px solid #16a34a",
+      borderRadius: 8,
+      textAlign: "center",
+      background: "#ecfdf5",
+    }}
+  >
+    <h3>⏰ Medicine Reminder</h3>
+
+    {medicineImage && (
+      <img
+        src={medicineImage}
+        alt="Medicine"
+        style={{
+          width: 140,
+          height: "auto",
+          borderRadius: 8,
+          marginBottom: 10,
+        }}
+      />
+    )}
+
+    <p>
+      <strong>{medicineName}</strong> — {dose}
+    </p>
+
+    <button
+      onClick={markAsTaken}
+      style={{
+        background: "green",
+        color: "#fff",
+        width: "100%",
+        padding: 14,
+        fontSize: 16,
+        borderRadius: 6,
+      }}
+    >
+      ✅ Mark as Taken
+    </button>
+  </div>
+)}
 
       <hr />
 
