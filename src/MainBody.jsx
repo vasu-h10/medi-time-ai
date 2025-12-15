@@ -104,8 +104,8 @@ useEffect(() => {
 
 /**
  * 🔔 Pre-Reminder Notification
- * Triggered 5 minutes before reminder time
- * Bell + image only (NO voice, NO medicine name)
+ * Bell only, NO voice, NO medicine name
+ * Triggers 5 minutes before reminder time
  */
 const schedulePreNotification = (time) => {
   if (!("Notification" in window)) return;
@@ -113,22 +113,20 @@ const schedulePreNotification = (time) => {
 
   const FIVE_MIN = 5 * 60 * 1000;
   const delay = time - Date.now() - FIVE_MIN;
-
   if (delay <= 0) return;
 
   setTimeout(() => {
     new Notification("🔔 Reminder Alert", {
       body: "5 minutes remaining",
       icon: "/icons/icon-192.png",
-      silent: false, // 🔔 system bell sound
+      silent: false, // system bell sound
     });
   }, delay);
 };
 
 /**
- * ✅ User Acknowledgement Notification
- * Triggered when user presses "Mark as Taken"
- * DOES NOT confirm medicine taken (safety)
+ * ✅ User acknowledgement only
+ * NOT confirming medicine taken
  */
 const notifyUserAlert = () => {
   if (!("Notification" in window)) return;
