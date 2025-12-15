@@ -215,14 +215,21 @@ function MainBody() {
   };
 
   // ---------------- UI ----------------
-  return (
-    <main style={{ padding: 20 }}>
-      <h2>🗣 Voice Language</h2>
-      <select value={voiceLang} onChange={e => setVoiceLang(e.target.value)}>
-        {Object.keys(reminderTextByLang).map(l => (
-          <option key={l} value={l}>{l}</option>
-        ))}
-      </select>
+return (
+  <main style={{ padding: 20 }}>
+    <h2>🗣 Voice Language</h2>
+
+    <select value={voiceLang} onChange={e => setVoiceLang(e.target.value)}>
+      <option value="en-IN">English (India)</option>
+      <option value="hi-IN">Hindi (हिंदी)</option>
+      <option value="te-IN">Telugu (తెలుగు)</option>
+      <option value="ta-IN">Tamil (தமிழ்)</option>
+      <option value="kn-IN">Kannada (ಕನ್ನಡ)</option>
+      <option value="ml-IN">Malayalam (മലയാളം)</option>
+      <option value="bn-IN">Bengali (বাংলা)</option>
+      <option value="mr-IN">Marathi (मराठी)</option>
+      <option value="gu-IN">Gujarati (ગુજરાતી)</option>
+    </select>
 
       <h2>👤 Patient</h2>
       <input value={patientName} onChange={e => setPatientName(e.target.value)} />
