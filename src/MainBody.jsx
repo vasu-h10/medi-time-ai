@@ -227,11 +227,6 @@ const addReminder = () => {
     return;
   }
 
-  // Cancel previous timeout
-  if (reminderTimeoutRef.current) {
-    clearTimeout(reminderTimeoutRef.current);
-  }
-
   // Success checkmark
   setAddedSuccess(true);
   setTimeout(() => setAddedSuccess(false), 2000);
