@@ -39,6 +39,7 @@ function MainBody() {
 
   const alarmRef = useRef(null);
   const stopSpeechRef = useRef(null);
+  const reminderTimeoutRef = useRef(null);
 
   // ---------------- CONSTANTS ----------------
   const doses = ["10 mg", "20 mg", "50 mg", "100 mg", "250 mg", "500 mg"];
@@ -198,10 +199,20 @@ function MainBody() {
 
   // ---------------- ADD REMINDER ----------------
   const addReminder = () => {
-    setAddedSuccess(true);
-    setTimeout(() => setAddedSuccess(false), 2000);
-    setTimeout(triggerReminder, getDelay());
-  };
+  // ✅ Cancel previous reminder if exists
+  if (reminderTimeoutRef.current) {
+    clearTimeout(reminderTimeoutRef.current);
+  }
+
+  // ✅ Show success checkmark
+  setAddedSuccess(true);
+  setTimeout(() => setAddedSuccess(false), 2000);
+
+  // ✅ Store timeout reference
+  reminderTimeoutRef.current = setTimeout(() => {
+    triggerReminder();
+  }, getDelay());
+};
 
   // ---------------- HISTORY ----------------
   const toggleSelect = (id) =>
