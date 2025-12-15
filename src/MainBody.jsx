@@ -1,14 +1,12 @@
 import { useEffect, useState, useRef } from "react";
 
 /**
- * MainBody.jsx
- * FINAL VERSION
- * - Female-only TTS (auto fallback)
- * - 9+ language full sentence translations
- * - NON-STOP alarm + chained speech (no cuts)
+ * MainBody.jsx — FINAL
+ * - Female-first TTS (safe fallback)
+ * - 9 Indian languages (full sentences)
+ * - NON-STOP alarm + chained speech (NO CUTS)
  * - Stops ONLY on "Mark as Taken"
- * - Gallery image (compressed)
- * - Alarm image preview
+ * - Gallery image upload (compressed)
  * - History show/hide + multi delete
  * - Play Store / TWA safe
  */
@@ -33,7 +31,7 @@ function MainBody() {
   const [showHistory, setShowHistory] = useState(false);
 
   const [voiceLang, setVoiceLang] = useState("en-IN");
-  const [allVoices, setAllVoices] = useState([]);
+  const [voices, setVoices] = useState([]);
 
   const [isRinging, setIsRinging] = useState(false);
 
@@ -42,20 +40,41 @@ function MainBody() {
 
   // ---------------- CONSTANTS ----------------
   const doses = ["10 mg", "20 mg", "50 mg", "100 mg", "250 mg", "500 mg"];
-  const hours = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, "0"));
-  const minutes = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, "0"));
+  const hours = Array.from({ length: 12 }, (_, i) =>
+    String(i + 1).padStart(2, "0")
+  );
+  const minutes = Array.from({ length: 60 }, (_, i) =>
+    String(i).padStart(2, "0")
+  );
 
   // ---------------- TRANSLATIONS ----------------
   const reminderTextByLang = {
-    "English-IN": ({ n, m, d }) => `Mr ${n}, this is your ${m} ${d} time. Please take it now.`,
-    "Hindi-IN": ({ n, m, d }) => `${n} जी, अब ${m} ${d} लेने का समय है। कृपया अभी लें।`,
-    "Telugu-IN": ({ n, m, d }) => `${n} గారు, ఇది మీ ${m} ${d} తీసుకునే సమయం. దయచేసి ఇప్పుడు తీసుకోండి.`,
-    "Tamil-IN": ({ n, m, d }) => `${n}, இது உங்கள் ${m} ${d} எடுத்துக்கொள்ளும் நேரம்.`,
-    " Kannada-IN": ({ n, m, d }) => `${n}, ಇದು ನಿಮ್ಮ ${m} ${d} ತೆಗೆದುಕೊಳ್ಳುವ ಸಮಯ.`,
-    "Malayalam-IN": ({ n, m, d }) => `${n}, ഇത് നിങ്ങളുടെ ${m} ${d} എടുക്കേണ്ട സമയമാണ്.`,
-    " Bengali-IN": ({ n, m, d }) => `${n}, এখন আপনার ${m} ${d} নেওয়ার সময়।`,
-    "Marathi-IN": ({ n, m, d }) => `${n}, आता तुमचे ${m} ${d} घेण्याची वेळ झाली आहे.`,
-    "Gujarati-IN": ({ n, m, d }) => `${n}, હવે તમારું ${m} ${d} લેવાનો સમય છે.`,
+    "en-IN": ({ n, m, d }) =>
+      `Mr ${n}, this is your ${m} ${d} time. Please take it now.`,
+
+    "hi-IN": ({ n, m, d }) =>
+      `${n} जी, अब ${m} ${d} लेने का समय है। कृपया अभी लें।`,
+
+    "te-IN": ({ n, m, d }) =>
+      `${n} గారు, ఇది మీ ${m} ${d} తీసుకునే సమయం. దయచేసి ఇప్పుడు తీసుకోండి.`,
+
+    "ta-IN": ({ n, m, d }) =>
+      `${n}, இது உங்கள் ${m} ${d} எடுத்துக்கொள்ளும் நேரம். தயவுசெய்து இப்போது எடுத்துக்கொள்ளுங்கள்.`,
+
+    "kn-IN": ({ n, m, d }) =>
+      `${n}, ಇದು ನಿಮ್ಮ ${m} ${d} ತೆಗೆದುಕೊಳ್ಳುವ ಸಮಯ. ದಯವಿಟ್ಟು ಈಗ ತೆಗೆದುಕೊಳ್ಳಿ.`,
+
+    "ml-IN": ({ n, m, d }) =>
+      `${n}, ഇത് നിങ്ങളുടെ ${m} ${d} എടുക്കേണ്ട സമയമാണ്. ദയവായി ഇപ്പോൾ എടുക്കുക.`,
+
+    "bn-IN": ({ n, m, d }) =>
+      `${n}, এখন আপনার ${m} ${d} নেওয়ার সময়। অনুগ্রহ করে এখনই নিন।`,
+
+    "mr-IN": ({ n, m, d }) =>
+      `${n}, आता तुमचे ${m} ${d} घेण्याची वेळ झाली आहे. कृपया आत्ताच घ्या.`,
+
+    "gu-IN": ({ n, m, d }) =>
+      `${n}, હવે તમારું ${m} ${d} લેવાનો સમય છે. કૃપા કરીને હવે લો।`,
   };
 
   const getReminderText = () =>
@@ -67,10 +86,11 @@ function MainBody() {
 
   // ---------------- LOAD VOICES ----------------
   useEffect(() => {
-    const load = () => setAllVoices(window.speechSynthesis.getVoices());
+    const load = () => setVoices(window.speechSynthesis.getVoices() || []);
     load();
     window.speechSynthesis.addEventListener("voiceschanged", load);
-    return () => window.speechSynthesis.removeEventListener("voiceschanged", load);
+    return () =>
+      window.speechSynthesis.removeEventListener("voiceschanged", load);
   }, []);
 
   // ---------------- STORAGE ----------------
@@ -81,10 +101,10 @@ function MainBody() {
 
   // ---------------- VOICE PICKER ----------------
   const selectVoice = (lang) =>
-    allVoices.find(v => v.lang === lang) ||
-    allVoices.find(v => v.lang.startsWith(lang.split("-")[0])) ||
-    allVoices.find(v => v.lang.startsWith("en")) ||
-    allVoices[0];
+    voices.find(v => v.lang === lang) ||
+    voices.find(v => v.lang.startsWith(lang.split("-")[0])) ||
+    voices.find(v => v.lang.startsWith("en")) ||
+    voices[0];
 
   // ---------------- ALARM ----------------
   const playAlarm = () => {
@@ -100,21 +120,29 @@ function MainBody() {
     alarmRef.current = null;
   };
 
-  // ---------------- SAFE SPEECH LOOP ----------------
+  // ---------------- SAFE CHAINED SPEECH (NO CUTS) ----------------
   const speakLoop = (text) => {
     const voice = selectVoice(voiceLang);
     let stopped = false;
 
     const speakOnce = () => {
       if (stopped) return;
+
       const u = new SpeechSynthesisUtterance(text);
       if (voice) u.voice = voice;
       u.lang = voice?.lang || "en-IN";
-      u.onend = () => !stopped && setTimeout(speakOnce, 800);
+      u.volume = 1;
+      u.rate = 1;
+      u.pitch = 1.1;
+
+      u.onend = () => !stopped && setTimeout(speakOnce, 900);
+      u.onerror = () => !stopped && setTimeout(speakOnce, 1500);
+
       window.speechSynthesis.speak(u);
     };
 
     speakOnce();
+
     return () => {
       stopped = true;
       window.speechSynthesis.cancel();
@@ -126,6 +154,7 @@ function MainBody() {
     let h = parseInt(hour);
     if (ampm === "PM" && h !== 12) h += 12;
     if (ampm === "AM" && h === 12) h = 0;
+
     const now = new Date();
     const t = new Date();
     t.setHours(h, parseInt(minute), 0, 0);
@@ -133,7 +162,7 @@ function MainBody() {
     return t - now;
   };
 
-  // ---------------- IMAGE PICK (COMPRESS) ----------------
+  // ---------------- IMAGE PICK (GALLERY ONLY) ----------------
   const onImagePick = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -184,7 +213,9 @@ function MainBody() {
 
   // ---------------- HISTORY DELETE ----------------
   const toggleSelect = (id) =>
-    setSelectedHistory(s => s.includes(id) ? s.filter(x => x !== id) : [...s, id]);
+    setSelectedHistory(s =>
+      s.includes(id) ? s.filter(x => x !== id) : [...s, id]
+    );
 
   const deleteSelected = () => {
     setHistory(h => h.filter(x => !selectedHistory.includes(x.id)));
@@ -196,9 +227,15 @@ function MainBody() {
     <main style={{ padding: 20 }}>
       <h2>🗣 Voice Language</h2>
       <select value={voiceLang} onChange={e => setVoiceLang(e.target.value)}>
-        {Object.keys(reminderTextByLang).map(l => (
-          <option key={l} value={l}>{l}</option>
-        ))}
+        <option value="en-IN">English (India)</option>
+        <option value="hi-IN">Hindi</option>
+        <option value="te-IN">Telugu</option>
+        <option value="ta-IN">Tamil</option>
+        <option value="kn-IN">Kannada</option>
+        <option value="ml-IN">Malayalam</option>
+        <option value="bn-IN">Bengali</option>
+        <option value="mr-IN">Marathi</option>
+        <option value="gu-IN">Gujarati</option>
       </select>
 
       <h2>👤 Patient</h2>
@@ -219,7 +256,9 @@ function MainBody() {
       <select value={minute} onChange={e => setMinute(e.target.value)}>{minutes.map(m => <option key={m}>{m}</option>)}</select>
       <select value={ampm} onChange={e => setAmPm(e.target.value)}><option>AM</option><option>PM</option></select>
 
-      <button onClick={() => setTimeout(triggerReminder, getDelay())}>➕ Add Reminder</button>
+      <button onClick={() => setTimeout(triggerReminder, getDelay())}>
+        ➕ Add Reminder
+      </button>
 
       {isRinging && (
         <>
@@ -254,6 +293,7 @@ function MainBody() {
         </>
       )}
 
+      {/* Advertisement */}
       <div style={{ marginTop: 30, background: "#f1f5f9", padding: 15, textAlign: "center" }}>
         <small>Advertisement</small>
         <div style={{ height: 60, background: "#e5e7eb", marginTop: 6 }} />
