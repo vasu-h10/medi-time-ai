@@ -197,21 +197,62 @@ function MainBody() {
     setIsRinging(false);
   };
 
-  // ---------------- ADD REMINDER ----------------
-  const addReminder = () => {
-  // ✅ Cancel previous reminder if exists
+  // 🔹 Convert selected time to timestamp
+const getReminderTimestamp = () => {
+  let h = parseInt(hour);
+  if (ampm === "PM" && h !== 12) h += 12;
+  if (ampm === "AM" && h === 12) h = 0;
+
+  const now = new Date();
+  const t = new Date();
+  t.setHours(h, parseInt(minute), 0, 0);
+  if (t < now) t.setDate(t.getDate() + 1);
+
+  return t.getTime();
+};
+
+// 🔹 Detect 1-minute conflict
+const hasTimeConflict = (newTime) => {
+  const ONE_MIN = 60 * 1000;
+  return history.some(h => h.time && Math.abs(h.time - newTime) < ONE_MIN);
+};
+
+// ---------------- ADD REMINDER ----------------
+const addReminder = () => {
+  const reminderTime = getReminderTimestamp();
+
+  // 🚨 Conflict warning
+  if (hasTimeConflict(reminderTime)) {
+    alert("⚠️ Time conflict!\nPlease keep at least 1 minute gap between medicines.");
+    return;
+  }
+
+  // Cancel previous timeout
   if (reminderTimeoutRef.current) {
     clearTimeout(reminderTimeoutRef.current);
   }
 
-  // ✅ Show success checkmark
+  // Success checkmark
   setAddedSuccess(true);
   setTimeout(() => setAddedSuccess(false), 2000);
 
-  // ✅ Store timeout reference
+  // Schedule reminder
   reminderTimeoutRef.current = setTimeout(() => {
     triggerReminder();
-  }, getDelay());
+  }, reminderTime - Date.now());
+
+  // Store reminder time for future conflict checks
+  setHistory(h => [
+    {
+      id: Date.now(),
+      medicine: medicineName,
+      dose,
+      image: medicineImage,
+      time: reminderTime, // 🔑 required
+      takenAt: null,
+    },
+    ...h,
+  ]);
 };
 
   // ---------------- HISTORY ----------------
