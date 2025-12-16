@@ -11,7 +11,13 @@ export default function MainBody() {
   const [minute, setMinute] = useState("00");
   const [ampm, setAmPm] = useState("AM");
 
-  const [history, setHistory] = useState([]);
+  const [history, setHistory] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("history")) || [];
+    } catch {
+      return [];
+    }
+  });
   const [showHistory, setShowHistory] = useState(false);
 
   const [isRinging, setIsRinging] = useState(false);
@@ -34,6 +40,11 @@ export default function MainBody() {
       Notification.requestPermission();
     }
   }, []);
+
+  // ---------------- STORAGE ----------------
+  useEffect(() => {
+    localStorage.setItem("history", JSON.stringify(history));
+  }, [history]);
 
   // ---------------- IMAGE PICK ----------------
   const onImagePick = (e) => {
@@ -118,7 +129,7 @@ export default function MainBody() {
         icon: "/icons/icon-192.png",
       });
 
-      // If app is open, upgrade to alarm + voice
+      // Upgrade to alarm + voice ONLY if app is open
       if (document.visibilityState === "visible") {
         triggerReminder();
       }
@@ -129,7 +140,7 @@ export default function MainBody() {
   const addReminder = () => {
     const time = getReminderTimestamp();
 
-    // unlock audio + speech (browser rule)
+    // unlock audio (browser rule)
     try {
       new Audio().play().catch(() => {});
       window.speechSynthesis?.cancel();
@@ -200,13 +211,7 @@ export default function MainBody() {
       {isRinging && (
         <button
           onClick={markAsTaken}
-          style={{
-            marginTop: 20,
-            width: "100%",
-            background: "green",
-            color: "#fff",
-            padding: 14,
-          }}
+          style={{ marginTop: 20, width: "100%", background: "green", color: "#fff", padding: 14 }}
         >
           ✅ Mark as Taken
         </button>
@@ -225,20 +230,11 @@ export default function MainBody() {
             💊 <strong>{h.medicine}</strong> — {h.dose}
             <br />
             ⏰ {new Date(h.time).toLocaleString()}
-            {h.image && (
-              <img src={h.image} style={{ width: 60, marginTop: 6 }} />
-            )}
+            {h.image && <img src={h.image} style={{ width: 60, marginTop: 6 }} />}
           </div>
         ))}
 
-      <div
-        style={{
-          marginTop: 32,
-          padding: 16,
-          background: "#f8fafc",
-          borderRadius: 10,
-        }}
-      >
+      <div style={{ marginTop: 32, padding: 16, background: "#f8fafc", borderRadius: 10 }}>
         <small>Advertisement</small>
         <div style={{ height: 64, background: "#e5e7eb", marginTop: 8 }}>
           Ad will appear here
