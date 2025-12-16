@@ -1,1 +1,2 @@
 const a = new Audio("/alarm.mp3");
+a.play();
