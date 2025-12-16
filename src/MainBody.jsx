@@ -1,7 +1,9 @@
 import { useEffect, useState, useRef } from "react";
 
 export default function MainBody() {
-  // ---------------- STATE ----------------
+  /* =======================
+     STATE
+  ======================= */
   const [patientName, setPatientName] = useState("");
   const [medicineName, setMedicineName] = useState("");
   const [dose, setDose] = useState("20 mg");
@@ -11,43 +13,39 @@ export default function MainBody() {
   const [minute, setMinute] = useState("00");
   const [ampm, setAmPm] = useState("AM");
 
-  const [history, setHistory] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem("history")) || [];
-    } catch {
-      return [];
-    }
-  });
+  const [history, setHistory] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
 
   const [isRinging, setIsRinging] = useState(false);
   const [addedSuccess, setAddedSuccess] = useState(false);
 
   const alarmRef = useRef(null);
-  const pendingReminderRef = useRef(null); // for visibility upgrade
 
-  // ---------------- CONSTANTS ----------------
+  /* =======================
+     CONSTANTS
+  ======================= */
   const doses = ["5 mg", "10 mg", "20 mg", "50 mg", "100 mg"];
+
   const hours = Array.from({ length: 12 }, (_, i) =>
     String(i + 1).padStart(2, "0")
   );
+
   const minutes = Array.from({ length: 60 }, (_, i) =>
     String(i).padStart(2, "0")
   );
 
-  // ---------------- PERMISSION ----------------
+  /* =======================
+     PERMISSIONS
+  ======================= */
   useEffect(() => {
     if ("Notification" in window && Notification.permission === "default") {
       Notification.requestPermission();
     }
   }, []);
 
-  // ---------------- STORAGE ----------------
-  useEffect(() => {
-    localStorage.setItem("history", JSON.stringify(history));
-  }, [history]);
-
-  // ---------------- IMAGE PICK ----------------
+  /* =======================
+     IMAGE PICKER
+  ======================= */
   const onImagePick = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -57,7 +55,9 @@ export default function MainBody() {
     reader.readAsDataURL(file);
   };
 
-  // ---------------- TIME ----------------
+  /* =======================
+     TIME CALCULATION
+  ======================= */
   const getReminderTimestamp = () => {
     let h = parseInt(hour, 10);
     if (ampm === "PM" && h !== 12) h += 12;
@@ -65,18 +65,24 @@ export default function MainBody() {
 
     const t = new Date();
     t.setHours(h, parseInt(minute, 10), 0, 0);
-    if (t < new Date()) t.setDate(t.getDate() + 1);
+
+    if (t < new Date()) {
+      t.setDate(t.getDate() + 1);
+    }
+
     return t.getTime();
   };
 
-  // ---------------- ALARM ----------------
+  /* =======================
+     ALARM SOUND
+  ======================= */
   const playAlarm = () => {
     stopAlarm();
-    const a = new Audio("/alarm.mp3"); // must exist in /public
-    a.loop = true;
-    a.volume = 1;
-    a.play().catch(() => {});
-    alarmRef.current = a;
+    const audio = new Audio("/alarm.mp3"); // file must be in /public
+    audio.loop = true;
+    audio.volume = 1;
+    audio.play().catch(() => {});
+    alarmRef.current = audio;
   };
 
   const stopAlarm = () => {
@@ -84,23 +90,25 @@ export default function MainBody() {
     alarmRef.current = null;
   };
 
-  // ---------------- REMINDER CORE ----------------
+  /* =======================
+     REMINDER TRIGGER
+  ======================= */
   const triggerReminder = () => {
     setIsRinging(true);
     playAlarm();
 
-    // 🗣 Voice ONLY if app is open
     if ("speechSynthesis" in window && document.visibilityState === "visible") {
       window.speechSynthesis.cancel();
 
-      const u = new SpeechSynthesisUtterance(
+      const utterance = new SpeechSynthesisUtterance(
         `Hello ${patientName || "there"}. It is time to take your medicine.`
       );
-      u.lang = "en-IN";
-      u.rate = 0.95;
-      u.pitch = 1;
 
-      window.speechSynthesis.speak(u);
+      utterance.lang = "en-IN";
+      utterance.rate = 0.95;
+      utterance.pitch = 1;
+
+      window.speechSynthesis.speak(utterance);
     }
   };
 
@@ -117,7 +125,9 @@ export default function MainBody() {
     }
   };
 
-  // ---------------- NOTIFICATION ----------------
+  /* =======================
+     NOTIFICATION
+  ======================= */
   const scheduleNotification = (time) => {
     if (!("Notification" in window)) return;
     if (Notification.permission !== "granted") return;
@@ -131,33 +141,15 @@ export default function MainBody() {
         icon: "/icons/icon-192.png",
       });
 
-      // remember pending reminder
-      pendingReminderRef.current = time;
-
-      // If app is already open → upgrade
       if (document.visibilityState === "visible") {
         triggerReminder();
       }
     }, delay);
   };
 
-  // Upgrade reminder when user opens app
-  useEffect(() => {
-    const onVisible = () => {
-      if (
-        document.visibilityState === "visible" &&
-        pendingReminderRef.current
-      ) {
-        triggerReminder();
-        pendingReminderRef.current = null;
-      }
-    };
-    document.addEventListener("visibilitychange", onVisible);
-    return () =>
-      document.removeEventListener("visibilitychange", onVisible);
-  }, []);
-
-  // ---------------- ADD REMINDER ----------------
+  /* =======================
+     ADD REMINDER
+  ======================= */
   const addReminder = () => {
     const time = getReminderTimestamp();
 
@@ -172,7 +164,7 @@ export default function MainBody() {
 
     scheduleNotification(time);
 
-    setHistory((h) => [
+    setHistory((prev) => [
       {
         id: Date.now(),
         medicine: medicineName,
@@ -180,13 +172,15 @@ export default function MainBody() {
         time,
         image: medicineImage,
       },
-      ...h,
+      ...prev,
     ]);
 
     setMedicineImage(null);
   };
 
-  // ---------------- UI ----------------
+  /* =======================
+     UI
+  ======================= */
   return (
     <main style={{ padding: 20 }}>
       <h2>👤 Patient</h2>
@@ -268,7 +262,11 @@ export default function MainBody() {
             <br />
             ⏰ {new Date(h.time).toLocaleString()}
             {h.image && (
-              <img src={h.image} style={{ width: 60, marginTop: 6 }} />
+              <img
+                src={h.image}
+                alt=""
+                style={{ width: 60, marginTop: 6 }}
+              />
             )}
           </div>
         ))}
@@ -282,7 +280,9 @@ export default function MainBody() {
         }}
       >
         <small>Advertisement</small>
-        <div style={{ height: 64, background: "#e5e7eb", marginTop: 8 }}>
+        <div
+          style={{ height: 64, background: "#e5e7eb", marginTop: 8 }}
+        >
           Ad will appear here
         </div>
       </div>
