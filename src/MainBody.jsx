@@ -1,17 +1,18 @@
 import { useEffect, useState, useRef } from "react";
 
 /**
- * MainBody.jsx — FINAL & SAFE
- * - Alarm + continuous speech (while app is open)
- * - Female-first TTS with fallback
- * - Multi-language reminders
- * - Image upload (compressed)
- * - History with multi-delete
- * - Play Store / TWA compliant
+ * MainBody.jsx — FINAL
+ * - Female-first TTS (safe fallback)
+ * - 9 Indian languages (full sentences)
+ * - NON-STOP alarm + chained speech (NO CUTS)
+ * - Stops ONLY on "Mark as Taken"
+ * - Gallery image upload (compressed)
+ * - History show/hide + multi delete
+ * - Play Store / TWA safe
  */
 
-export default function MainBody() {
-  // ---------------- STATE ----------------
+function MainBody() {
+  // ---------------- STATES ----------------
   const [patientName, setPatientName] = useState(
     localStorage.getItem("patientName") || ""
   );
@@ -23,19 +24,16 @@ export default function MainBody() {
   const [minute, setMinute] = useState("00");
   const [ampm, setAmPm] = useState("AM");
 
-  const [history, setHistory] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem("history")) || [];
-    } catch {
-      return [];
-    }
-  });
-  const [showHistory, setShowHistory] = useState(false);
+  const [history, setHistory] = useState(
+    JSON.parse(localStorage.getItem("history") || "[]")
+  );
   const [selectedHistory, setSelectedHistory] = useState([]);
+  const [showHistory, setShowHistory] = useState(false);
 
-  const [isRinging, setIsRinging] = useState(false);
   const [voiceLang, setVoiceLang] = useState("en-IN");
   const [voices, setVoices] = useState([]);
+
+  const [isRinging, setIsRinging] = useState(false);
 
   const alarmRef = useRef(null);
   const stopSpeechRef = useRef(null);
@@ -49,11 +47,50 @@ export default function MainBody() {
     String(i).padStart(2, "0")
   );
 
-  // ---------------- PERMISSION ----------------
+  // ---------------- TRANSLATIONS ----------------
+  const reminderTextByLang = {
+    "en-IN": ({ n, m, d }) =>
+      `Mr ${n}, this is your ${m} ${d} time. Please take it now.`,
+
+    "hi-IN": ({ n, m, d }) =>
+      `${n} जी, अब ${m} ${d} लेने का समय है। कृपया अभी लें।`,
+
+    "te-IN": ({ n, m, d }) =>
+      `${n} గారు, ఇది మీ ${m} ${d} తీసుకునే సమయం. దయచేసి ఇప్పుడు తీసుకోండి.`,
+
+    "ta-IN": ({ n, m, d }) =>
+      `${n}, இது உங்கள் ${m} ${d} எடுத்துக்கொள்ளும் நேரம். தயவுசெய்து இப்போது எடுத்துக்கொள்ளுங்கள்.`,
+
+    "kn-IN": ({ n, m, d }) =>
+      `${n}, ಇದು ನಿಮ್ಮ ${m} ${d} ತೆಗೆದುಕೊಳ್ಳುವ ಸಮಯ. ದಯವಿಟ್ಟು ಈಗ ತೆಗೆದುಕೊಳ್ಳಿ.`,
+
+    "ml-IN": ({ n, m, d }) =>
+      `${n}, ഇത് നിങ്ങളുടെ ${m} ${d} എടുക്കേണ്ട സമയമാണ്. ദയവായി ഇപ്പോൾ എടുക്കുക.`,
+
+    "bn-IN": ({ n, m, d }) =>
+      `${n}, এখন আপনার ${m} ${d} নেওয়ার সময়। অনুগ্রহ করে এখনই নিন।`,
+
+    "mr-IN": ({ n, m, d }) =>
+      `${n}, आता तुमचे ${m} ${d} घेण्याची वेळ झाली आहे. कृपया आत्ताच घ्या.`,
+
+    "gu-IN": ({ n, m, d }) =>
+      `${n}, હવે તમારું ${m} ${d} લેવાનો સમય છે. કૃપા કરીને હવે લો।`,
+  };
+
+  const getReminderText = () =>
+    (reminderTextByLang[voiceLang] || reminderTextByLang["en-IN"])({
+      n: patientName,
+      m: medicineName,
+      d: dose,
+    });
+
+  // ---------------- LOAD VOICES ----------------
   useEffect(() => {
-    if ("Notification" in window && Notification.permission === "default") {
-      Notification.requestPermission();
-    }
+    const load = () => setVoices(window.speechSynthesis.getVoices() || []);
+    load();
+    window.speechSynthesis.addEventListener("voiceschanged", load);
+    return () =>
+      window.speechSynthesis.removeEventListener("voiceschanged", load);
   }, []);
 
   // ---------------- STORAGE ----------------
@@ -62,42 +99,76 @@ export default function MainBody() {
     localStorage.setItem("patientName", patientName);
   }, [history, patientName]);
 
-  // ---------------- LOAD VOICES ----------------
-  useEffect(() => {
-    const loadVoices = () =>
-      setVoices(window.speechSynthesis.getVoices() || []);
-    loadVoices();
-    window.speechSynthesis.addEventListener("voiceschanged", loadVoices);
-    return () =>
-      window.speechSynthesis.removeEventListener(
-        "voiceschanged",
-        loadVoices
-      );
-  }, []);
+  // ---------------- VOICE PICKER ----------------
+  const selectVoice = (lang) =>
+    voices.find(v => v.lang === lang) ||
+    voices.find(v => v.lang.startsWith(lang.split("-")[0])) ||
+    voices.find(v => v.lang.startsWith("en")) ||
+    voices[0];
 
-  // ---------------- TRANSLATIONS ----------------
-  const reminderText = {
-    "en-IN": `Mr ${patientName}, this is your ${medicineName} ${dose} time. Please take it now.`,
-    "hi-IN": `${patientName} जी, अब ${medicineName} ${dose} लेने का समय है। कृपया अभी लें।`,
-    "te-IN": `${patientName} గారు, ఇది మీ ${medicineName} ${dose} తీసుకునే సమయం. దయచేసి ఇప్పుడు తీసుకోండి.`,
-    "ta-IN": `${patientName}, இது உங்கள் ${medicineName} ${dose} எடுத்துக்கொள்ளும் நேரம். தயவுசெய்து இப்போது எடுத்துக்கொள்ளுங்கள்.`,
-    "kn-IN": `${patientName}, ಇದು ನಿಮ್ಮ ${medicineName} ${dose} ತೆಗೆದುಕೊಳ್ಳುವ ಸಮಯ. ದಯವಿಟ್ಟು ಈಗ ತೆಗೆದುಕೊಳ್ಳಿ.`,
-    "ml-IN": `${patientName}, ഇത് നിങ്ങളുടെ ${medicineName} ${dose} എടുക്കേണ്ട സമയമാണ്. ദയവായി ഇപ്പോൾ എടുക്കുക.`,
-    "bn-IN": `${patientName}, এখন আপনার ${medicineName} ${dose} নেওয়ার সময়। অনুগ্রহ করে এখনই নিন।`,
-    "mr-IN": `${patientName}, आता तुमचे ${medicineName} ${dose} घेण्याची वेळ झाली आहे. कृपया आत्ताच घ्या.`,
-    "gu-IN": `${patientName}, હવે તમારું ${medicineName} ${dose} લેવાનો સમય છે. કૃપા કરીને હવે લો.`,
+  // ---------------- ALARM ----------------
+  const playAlarm = () => {
+    const a = new Audio("/alarm.mp3");
+    a.loop = true;
+    a.volume = 1;
+    a.play().catch(() => {});
+    alarmRef.current = a;
   };
 
-  const getReminderText =
-    reminderText[voiceLang] || reminderText["en-IN"];
+  const stopAlarm = () => {
+    alarmRef.current?.pause();
+    alarmRef.current = null;
+  };
 
-  // ---------------- IMAGE PICK (COMPRESSED) ----------------
+  // ---------------- SAFE CHAINED SPEECH (NO CUTS) ----------------
+  const speakLoop = (text) => {
+    const voice = selectVoice(voiceLang);
+    let stopped = false;
+
+    const speakOnce = () => {
+      if (stopped) return;
+
+      const u = new SpeechSynthesisUtterance(text);
+      if (voice) u.voice = voice;
+      u.lang = voice?.lang || "en-IN";
+      u.volume = 1;
+      u.rate = 1;
+      u.pitch = 1.1;
+
+      u.onend = () => !stopped && setTimeout(speakOnce, 900);
+      u.onerror = () => !stopped && setTimeout(speakOnce, 1500);
+
+      window.speechSynthesis.speak(u);
+    };
+
+    speakOnce();
+
+    return () => {
+      stopped = true;
+      window.speechSynthesis.cancel();
+    };
+  };
+
+  // ---------------- TIME ----------------
+  const getDelay = () => {
+    let h = parseInt(hour);
+    if (ampm === "PM" && h !== 12) h += 12;
+    if (ampm === "AM" && h === 12) h = 0;
+
+    const now = new Date();
+    const t = new Date();
+    t.setHours(h, parseInt(minute), 0, 0);
+    if (t < now) t.setDate(t.getDate() + 1);
+    return t - now;
+  };
+
+  // ---------------- IMAGE PICK (GALLERY ONLY) ----------------
   const onImagePick = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
     const img = new Image();
+    const reader = new FileReader();
 
     reader.onload = () => {
       img.src = reader.result;
@@ -114,68 +185,11 @@ export default function MainBody() {
     reader.readAsDataURL(file);
   };
 
-  // ---------------- TIME ----------------
-  const getDelay = () => {
-    let h = parseInt(hour, 10);
-    if (ampm === "PM" && h !== 12) h += 12;
-    if (ampm === "AM" && h === 12) h = 0;
-
-    const now = new Date();
-    const t = new Date();
-    t.setHours(h, parseInt(minute, 10), 0, 0);
-    if (t < now) t.setDate(t.getDate() + 1);
-    return t - now;
-  };
-
-  // ---------------- ALARM ----------------
-  const playAlarm = () => {
-    stopAlarm();
-    const a = new Audio("/alarm.mp3"); // file must exist in /public
-    a.loop = true;
-    a.volume = 1;
-    a.play().catch(() => {});
-    alarmRef.current = a;
-  };
-
-  const stopAlarm = () => {
-    alarmRef.current?.pause();
-    alarmRef.current = null;
-  };
-
-  // ---------------- SPEECH LOOP ----------------
-  const speakLoop = (text) => {
-    let stopped = false;
-
-    const voice =
-      voices.find(v => v.lang === voiceLang) ||
-      voices.find(v => v.lang.startsWith(voiceLang.split("-")[0])) ||
-      voices[0];
-
-    const speakOnce = () => {
-      if (stopped) return;
-      const u = new SpeechSynthesisUtterance(text);
-      if (voice) u.voice = voice;
-      u.lang = voice?.lang || "en-IN";
-      u.rate = 1;
-      u.pitch = 1.1;
-      u.onend = () => !stopped && setTimeout(speakOnce, 800);
-      u.onerror = () => !stopped && setTimeout(speakOnce, 1200);
-      window.speechSynthesis.speak(u);
-    };
-
-    speakOnce();
-
-    return () => {
-      stopped = true;
-      window.speechSynthesis.cancel();
-    };
-  };
-
   // ---------------- TRIGGER ----------------
   const triggerReminder = () => {
     setIsRinging(true);
     playAlarm();
-    stopSpeechRef.current = speakLoop(getReminderText);
+    stopSpeechRef.current = speakLoop(getReminderText());
   };
 
   // ---------------- STOP ----------------
@@ -238,64 +252,54 @@ export default function MainBody() {
       </select>
 
       <h2>⏰ Time</h2>
-      <select value={hour} onChange={e => setHour(e.target.value)}>
-        {hours.map(h => <option key={h}>{h}</option>)}
-      </select>
-      <select value={minute} onChange={e => setMinute(e.target.value)}>
-        {minutes.map(m => <option key={m}>{m}</option>)}
-      </select>
-      <select value={ampm} onChange={e => setAmPm(e.target.value)}>
-        <option>AM</option>
-        <option>PM</option>
-      </select>
+      <select value={hour} onChange={e => setHour(e.target.value)}>{hours.map(h => <option key={h}>{h}</option>)}</select>
+      <select value={minute} onChange={e => setMinute(e.target.value)}>{minutes.map(m => <option key={m}>{m}</option>)}</select>
+      <select value={ampm} onChange={e => setAmPm(e.target.value)}><option>AM</option><option>PM</option></select>
 
       <button onClick={() => setTimeout(triggerReminder, getDelay())}>
         ➕ Add Reminder
       </button>
 
       {isRinging && (
-        <button onClick={markAsTaken} style={{ background: "green", color: "#fff", width: "100%", marginTop: 10 }}>
-          ✅ Mark as Taken
-        </button>
+        <>
+          {medicineImage && <img src={medicineImage} style={{ width: 140, marginTop: 10 }} />}
+          <button onClick={markAsTaken} style={{ background: "green", color: "#fff", width: "100%", marginTop: 10 }}>
+            ✅ Mark as Taken
+          </button>
+        </>
       )}
-      <hr style={{ margin: "24px 0" }} />
+
+      <hr />
 
       <h2>📜 History</h2>
       <button onClick={() => setShowHistory(!showHistory)}>
-        {showHistory ? "🙈 Hide History" : "👁 Show History"}
+        {showHistory ? "🙈 Hide" : "👁 Show"}
       </button>
 
-      {showHistory &&
-        history.map((h) => (
-          <div key={h.id} style={{ padding: 8 }}>
-            💊 <strong>{h.medicine}</strong> — {h.dose}
-            <br />
-            ⏰ {new Date(h.time).toLocaleString()}
-            {h.image && (
-              <img
-                src={h.image}
-                alt=""
-                style={{ width: 60, marginTop: 6 }}
-              />
-            )}
-          </div>
-        ))}
+      {showHistory && (
+        <>
+          {selectedHistory.length > 0 && (
+            <button onClick={deleteSelected} style={{ background: "red", color: "#fff", width: "100%" }}>
+              🗑 Delete Selected
+            </button>
+          )}
 
-      <div
-        style={{
-          marginTop: 32,
-          padding: 16,
-          background: "#f8fafc",
-          borderRadius: 10,
-        }}
-      >
+          {history.map(h => (
+            <div key={h.id}>
+              <input type="checkbox" onChange={() => toggleSelect(h.id)} />
+              {h.image && <img src={h.image} style={{ width: 50 }} />} {h.medicine}
+            </div>
+          ))}
+        </>
+      )}
+
+      {/* Advertisement */}
+      <div style={{ marginTop: 30, background: "#f1f5f9", padding: 15, textAlign: "center" }}>
         <small>Advertisement</small>
-        <div
-          style={{ height: 64, background: "#e5e7eb", marginTop: 8 }}
-        >
-          Ad will appear here
-        </div>
+        <div style={{ height: 60, background: "#e5e7eb", marginTop: 6 }} />
       </div>
     </main>
   );
 }
+
+export default MainBody;
