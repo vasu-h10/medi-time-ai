@@ -24,6 +24,7 @@ export default function MainBody() {
   const [addedSuccess, setAddedSuccess] = useState(false);
 
   const alarmRef = useRef(null);
+  const pendingReminderRef = useRef(null); // for visibility upgrade
 
   // ---------------- CONSTANTS ----------------
   const doses = ["5 mg", "10 mg", "20 mg", "50 mg", "100 mg"];
@@ -88,6 +89,7 @@ export default function MainBody() {
     setIsRinging(true);
     playAlarm();
 
+    // 🗣 Voice ONLY if app is open
     if ("speechSynthesis" in window && document.visibilityState === "visible") {
       window.speechSynthesis.cancel();
 
@@ -129,18 +131,37 @@ export default function MainBody() {
         icon: "/icons/icon-192.png",
       });
 
-      // Upgrade to alarm + voice ONLY if app is open
+      // remember pending reminder
+      pendingReminderRef.current = time;
+
+      // If app is already open → upgrade
       if (document.visibilityState === "visible") {
         triggerReminder();
       }
     }, delay);
   };
 
+  // Upgrade reminder when user opens app
+  useEffect(() => {
+    const onVisible = () => {
+      if (
+        document.visibilityState === "visible" &&
+        pendingReminderRef.current
+      ) {
+        triggerReminder();
+        pendingReminderRef.current = null;
+      }
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () =>
+      document.removeEventListener("visibilitychange", onVisible);
+  }, []);
+
   // ---------------- ADD REMINDER ----------------
   const addReminder = () => {
     const time = getReminderTimestamp();
 
-    // unlock audio (browser rule)
+    // unlock audio + speech (browser rule)
     try {
       new Audio().play().catch(() => {});
       window.speechSynthesis?.cancel();
@@ -169,10 +190,16 @@ export default function MainBody() {
   return (
     <main style={{ padding: 20 }}>
       <h2>👤 Patient</h2>
-      <input value={patientName} onChange={(e) => setPatientName(e.target.value)} />
+      <input
+        value={patientName}
+        onChange={(e) => setPatientName(e.target.value)}
+      />
 
       <h2>💊 Medicine</h2>
-      <input value={medicineName} onChange={(e) => setMedicineName(e.target.value)} />
+      <input
+        value={medicineName}
+        onChange={(e) => setMedicineName(e.target.value)}
+      />
 
       <select value={dose} onChange={(e) => setDose(e.target.value)}>
         {doses.map((d) => (
@@ -183,7 +210,11 @@ export default function MainBody() {
       <input type="file" accept="image/*" onChange={onImagePick} />
 
       {medicineImage && (
-        <img src={medicineImage} alt="Medicine" style={{ width: 120, marginTop: 8 }} />
+        <img
+          src={medicineImage}
+          alt="Medicine"
+          style={{ width: 120, marginTop: 8 }}
+        />
       )}
 
       <h2>⏰ Time</h2>
@@ -211,7 +242,13 @@ export default function MainBody() {
       {isRinging && (
         <button
           onClick={markAsTaken}
-          style={{ marginTop: 20, width: "100%", background: "green", color: "#fff", padding: 14 }}
+          style={{
+            marginTop: 20,
+            width: "100%",
+            background: "green",
+            color: "#fff",
+            padding: 14,
+          }}
         >
           ✅ Mark as Taken
         </button>
@@ -230,11 +267,20 @@ export default function MainBody() {
             💊 <strong>{h.medicine}</strong> — {h.dose}
             <br />
             ⏰ {new Date(h.time).toLocaleString()}
-            {h.image && <img src={h.image} style={{ width: 60, marginTop: 6 }} />}
+            {h.image && (
+              <img src={h.image} style={{ width: 60, marginTop: 6 }} />
+            )}
           </div>
         ))}
 
-      <div style={{ marginTop: 32, padding: 16, background: "#f8fafc", borderRadius: 10 }}>
+      <div
+        style={{
+          marginTop: 32,
+          padding: 16,
+          background: "#f8fafc",
+          borderRadius: 10,
+        }}
+      >
         <small>Advertisement</small>
         <div style={{ height: 64, background: "#e5e7eb", marginTop: 8 }}>
           Ad will appear here
