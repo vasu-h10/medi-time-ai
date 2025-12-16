@@ -1,1 +1,1 @@
-new Audio("/alarm.mp3");
+const a = new Audio("/alarm.mp3");
