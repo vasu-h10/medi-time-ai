@@ -182,27 +182,57 @@ function MainBody() {
   };
 
   // ---------------- TRIGGER ----------------
-  const triggerReminder = () => {
-    setIsRinging(true);
-    playAlarm();
-    stopSpeechRef.current = speakLoop(getReminderText());
-  };
+const triggerReminder = () => {
+  setIsRinging(true);
+  playAlarm();
+  stopSpeechRef.current = speakLoop(getReminderText());
+};
 
-  // ---------------- ADD REMINDER ----------------
-  const addReminder = () => {
-    const delay = getDelay();
-    if (delay <= 0) return;
+  // ---------------- TIME CONFLICT CHECK ----------------
+const hasTimeConflict = (newDelayMs) => {
+  const ONE_MINUTE = 60 * 1000;
+  const newTime = Date.now() + newDelayMs;
 
-    setAddedSuccess(true);
-    setTimeout(() => setAddedSuccess(false), 2000);
+  return history.some(h => {
+    if (!h.scheduledAt) return false;
+    return Math.abs(h.scheduledAt - newTime) < ONE_MINUTE;
+  });
+};
+// ---------------- ADD REMINDER (SAFE + CONFLICT FREE) ----------------
+const addReminder = () => {
+  const delay = getDelay();
+  if (delay <= 0) return;
 
-    if (reminderTimerRef.current) {
-      clearTimeout(reminderTimerRef.current);
-    }
+  // ❌ Prevent time conflicts (1-minute gap)
+  if (hasTimeConflict(delay)) {
+    alert("⚠️ Please keep at least 1 minute gap between medicines.");
+    return;
+  }
 
-    reminderTimerRef.current = setTimeout(triggerReminder, delay);
-  };
+  // ✅ Success UI
+  setAddedSuccess(true);
+  setTimeout(() => setAddedSuccess(false), 2000);
 
+  // ❌ Cancel previous active timer
+  if (reminderTimerRef.current) {
+    clearTimeout(reminderTimerRef.current);
+  }
+
+  // ⏱ Schedule reminder
+  reminderTimerRef.current = setTimeout(triggerReminder, delay);
+
+  // 📜 Store scheduled time for future conflict checks
+  setHistory(h => [
+    {
+      id: Date.now(),
+      medicine: medicineName,
+      dose,
+      image: medicineImage,
+      scheduledAt: Date.now() + delay,
+    },
+    ...h,
+  ]);
+};
   // ---------------- STOP ----------------
   const markAsTaken = () => {
     stopAlarm();
