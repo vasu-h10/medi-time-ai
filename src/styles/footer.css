@@ -1,1 +1,36 @@
 
+/* Footer container */
+.app-footer {
+  background: #333;
+  color: #fff;
+  padding: 15px 20px;
+  text-align: center;
+  margin-top: 20px;
+}
+
+/* Copyright text */
+.footer-text {
+  margin: 0;
+  font-size: 14px;
+}
+
+/* Links container */
+.footer-links {
+  margin-top: 10px;
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  font-size: 14px;
+  flex-wrap: wrap;
+}
+
+/* Footer links */
+.footer-links a {
+  color: #90caf9;
+  text-decoration: none;
+}
+
+/* Hover effect */
+.footer-links a:hover {
+  text-decoration: underline;
+}
