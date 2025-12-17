@@ -15,6 +15,8 @@ import { useEffect, useState, useRef } from "react";
 
 function MainBody() {
   // ---------------- STATES ----------------
+const [activeReminder, setActiveReminder] = useState(null);
+
   const [patientName, setPatientName] = useState(
     localStorage.getItem("patientName") || ""
   );
@@ -183,11 +185,18 @@ function MainBody() {
 
   // ---------------- TRIGGER ----------------
 const triggerReminder = () => {
+  const reminder = {
+    medicine: medicineName,
+    dose,
+    image: medicineImage,
+  };
+
+  setActiveReminder(reminder);
   setIsRinging(true);
+
   playAlarm();
   stopSpeechRef.current = speakLoop(getReminderText());
 };
-
   // ---------------- TIME CONFLICT CHECK ----------------
 const hasTimeConflict = (newDelayMs) => {
   const ONE_MINUTE = 60 * 1000;
@@ -246,22 +255,23 @@ const addReminder = () => {
 };
   // ---------------- STOP ----------------
   const markAsTaken = () => {
-    stopAlarm();
-    stopSpeechRef.current?.();
+  stopAlarm();
+  stopSpeechRef.current?.();
 
-    setHistory(h => [
-      {
-        id: Date.now(),
-        medicine: medicineName,
-        dose,
-        image: medicineImage,
-        takenAt: new Date().toLocaleString(),
-      },
-      ...h,
-    ]);
+  setHistory(h => [
+    {
+      id: Date.now(),
+      medicine: medicineName,
+      dose,
+      image: medicineImage,
+      takenAt: new Date().toLocaleString(),
+    },
+    ...h,
+  ]);
 
-    setIsRinging(false);
-  };
+  setIsRinging(false);
+  setActiveReminder(null); // ✅ important
+};
 
   // ---------------- HISTORY DELETE ----------------
   const toggleSelect = (id) =>
@@ -312,11 +322,54 @@ const addReminder = () => {
         {addedSuccess ? "✅ Reminder Added" : "➕ Add Reminder"}
       </button>
 
-      {isRinging && (
-        <button onClick={markAsTaken} style={{ background: "green", color: "#fff", width: "100%", marginTop: 10 }}>
-          ✅ Mark as Taken
-        </button>
-      )}
+      {isRinging && activeReminder && (
+  <div
+    style={{
+      marginTop: 20,
+      padding: 16,
+      borderRadius: 12,
+      background: "#ecfeff",
+      border: "1px solid #67e8f9",
+      textAlign: "center",
+    }}
+  >
+    <h3>🔔 Medicine Reminder</h3>
+
+    {activeReminder.image && (
+      <img
+        src={activeReminder.image}
+        alt="Medicine"
+        style={{
+          width: 140,
+          borderRadius: 10,
+          margin: "12px 0",
+        }}
+      />
+    )}
+
+    <div style={{ fontSize: 16, marginBottom: 6 }}>
+      💊 <b>{activeReminder.medicine}</b>
+    </div>
+
+    <div style={{ fontSize: 14, marginBottom: 14 }}>
+      Dose: {activeReminder.dose}
+    </div>
+
+    <button
+      onClick={markAsTaken}
+      style={{
+        background: "green",
+        color: "#fff",
+        width: "100%",
+        padding: 14,
+        fontSize: 16,
+        borderRadius: 8,
+      }}
+    >
+      ✅ Mark as Taken
+    </button>
+  </div>
+)}
 
       <hr />
 
