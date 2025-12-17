@@ -1,5 +1,6 @@
 /* ================= MEDI-TIME SERVICE WORKER ================= */
 
+// 🔁 Activate immediately
 self.addEventListener("install", () => {
   self.skipWaiting();
 });
@@ -9,6 +10,11 @@ self.addEventListener("activate", (event) => {
 });
 
 /* ---------------- PUSH / NOTIFICATION ---------------- */
+/*
+  This handler works for:
+  - Web Push
+  - FCM background messages (next step)
+*/
 self.addEventListener("push", (event) => {
   const data = event.data?.json() || {};
 
@@ -17,10 +23,15 @@ self.addEventListener("push", (event) => {
     icon: data.icon || "/icons/icon-192.png",
     image: data.image || undefined, // 🖼 medicine image
     badge: "/icons/icon-192.png",
-    requireInteraction: true, // stays on lock screen
-    vibrate: [200, 100, 200], // vibration if silent
+
+    // ✅ stays on lock screen until user acts
+    requireInteraction: true,
+
+    // ✅ vibration fallback when device is silent
+    vibrate: [200, 100, 200],
+
     data: {
-      url: "/", // open app on click
+      url: data.url || "/", // open app on click
     },
   });
 });
@@ -30,7 +41,8 @@ self.addEventListener("notificationclick", (event) => {
   event.notification.close();
 
   event.waitUntil(
-    self.clients.matchAll({ type: "window", includeUncontrolled: true })
+    self.clients
+      .matchAll({ type: "window", includeUncontrolled: true })
       .then((clients) => {
         for (const client of clients) {
           if (client.url === "/" && "focus" in client) {
