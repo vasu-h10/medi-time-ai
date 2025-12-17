@@ -1,1 +1,23 @@
+/* Header container */
+.app-header {
+  padding: 15px;
+  background: #1976d2;
+  color: white;
 
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+/* Logo */
+.app-logo {
+  display: block;
+}
+
+/* Title */
+.app-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+}
