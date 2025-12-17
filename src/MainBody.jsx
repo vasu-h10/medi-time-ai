@@ -1,12 +1,14 @@
 import { useEffect, useState, useRef } from "react";
 
 /**
- * MainBody.jsx — FINAL
- * - Female-first TTS (safe fallback)
- * - 9 Indian languages (full sentences)
- * - NON-STOP alarm + chained speech (NO CUTS)
+ * MainBody.jsx — FINAL (STABLE)
+ * - Success check-mark on Add Reminder
+ * - Prevents multi-reminder conflicts (single active timer)
+ * - Female-first TTS with fallback
+ * - 9 Indian languages
+ * - Non-stop alarm + chained speech
  * - Stops ONLY on "Mark as Taken"
- * - Gallery image upload (compressed)
+ * - Image upload + compression
  * - History show/hide + multi delete
  * - Play Store / TWA safe
  */
@@ -34,9 +36,12 @@ function MainBody() {
   const [voices, setVoices] = useState([]);
 
   const [isRinging, setIsRinging] = useState(false);
+  const [addedSuccess, setAddedSuccess] = useState(false);
 
+  // ---------------- REFS ----------------
   const alarmRef = useRef(null);
   const stopSpeechRef = useRef(null);
+  const reminderTimerRef = useRef(null); // ✅ prevents conflicts
 
   // ---------------- CONSTANTS ----------------
   const doses = ["10 mg", "20 mg", "50 mg", "100 mg", "250 mg", "500 mg"];
@@ -51,35 +56,27 @@ function MainBody() {
   const reminderTextByLang = {
     "en-IN": ({ n, m, d }) =>
       `Mr ${n}, this is your ${m} ${d} time. Please take it now.`,
-
     "hi-IN": ({ n, m, d }) =>
       `${n} जी, अब ${m} ${d} लेने का समय है। कृपया अभी लें।`,
-
     "te-IN": ({ n, m, d }) =>
       `${n} గారు, ఇది మీ ${m} ${d} తీసుకునే సమయం. దయచేసి ఇప్పుడు తీసుకోండి.`,
-
     "ta-IN": ({ n, m, d }) =>
       `${n}, இது உங்கள் ${m} ${d} எடுத்துக்கொள்ளும் நேரம். தயவுசெய்து இப்போது எடுத்துக்கொள்ளுங்கள்.`,
-
     "kn-IN": ({ n, m, d }) =>
       `${n}, ಇದು ನಿಮ್ಮ ${m} ${d} ತೆಗೆದುಕೊಳ್ಳುವ ಸಮಯ. ದಯವಿಟ್ಟು ಈಗ ತೆಗೆದುಕೊಳ್ಳಿ.`,
-
     "ml-IN": ({ n, m, d }) =>
       `${n}, ഇത് നിങ്ങളുടെ ${m} ${d} എടുക്കേണ്ട സമയമാണ്. ദയവായി ഇപ്പോൾ എടുക്കുക.`,
-
     "bn-IN": ({ n, m, d }) =>
       `${n}, এখন আপনার ${m} ${d} নেওয়ার সময়। অনুগ্রহ করে এখনই নিন।`,
-
     "mr-IN": ({ n, m, d }) =>
       `${n}, आता तुमचे ${m} ${d} घेण्याची वेळ झाली आहे. कृपया आत्ताच घ्या.`,
-
     "gu-IN": ({ n, m, d }) =>
       `${n}, હવે તમારું ${m} ${d} લેવાનો સમય છે. કૃપા કરીને હવે લો।`,
   };
 
   const getReminderText = () =>
     (reminderTextByLang[voiceLang] || reminderTextByLang["en-IN"])({
-      n: patientName,
+      n: patientName || "there",
       m: medicineName,
       d: dose,
     });
@@ -108,6 +105,7 @@ function MainBody() {
 
   // ---------------- ALARM ----------------
   const playAlarm = () => {
+    stopAlarm();
     const a = new Audio("/alarm.mp3");
     a.loop = true;
     a.volume = 1;
@@ -120,7 +118,7 @@ function MainBody() {
     alarmRef.current = null;
   };
 
-  // ---------------- SAFE CHAINED SPEECH (NO CUTS) ----------------
+  // ---------------- CHAINED SPEECH ----------------
   const speakLoop = (text) => {
     const voice = selectVoice(voiceLang);
     let stopped = false;
@@ -131,7 +129,6 @@ function MainBody() {
       const u = new SpeechSynthesisUtterance(text);
       if (voice) u.voice = voice;
       u.lang = voice?.lang || "en-IN";
-      u.volume = 1;
       u.rate = 1;
       u.pitch = 1.1;
 
@@ -151,18 +148,18 @@ function MainBody() {
 
   // ---------------- TIME ----------------
   const getDelay = () => {
-    let h = parseInt(hour);
+    let h = parseInt(hour, 10);
     if (ampm === "PM" && h !== 12) h += 12;
     if (ampm === "AM" && h === 12) h = 0;
 
     const now = new Date();
     const t = new Date();
-    t.setHours(h, parseInt(minute), 0, 0);
+    t.setHours(h, parseInt(minute, 10), 0, 0);
     if (t < now) t.setDate(t.getDate() + 1);
     return t - now;
   };
 
-  // ---------------- IMAGE PICK (GALLERY ONLY) ----------------
+  // ---------------- IMAGE PICK ----------------
   const onImagePick = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -190,6 +187,23 @@ function MainBody() {
     setIsRinging(true);
     playAlarm();
     stopSpeechRef.current = speakLoop(getReminderText());
+  };
+
+  // ---------------- ADD REMINDER (SAFE) ----------------
+  const addReminder = () => {
+    const delay = getDelay();
+    if (delay <= 0) return;
+
+    // ✅ success UI
+    setAddedSuccess(true);
+    setTimeout(() => setAddedSuccess(false), 2000);
+
+    // ❌ cancel previous reminder
+    if (reminderTimerRef.current) {
+      clearTimeout(reminderTimerRef.current);
+    }
+
+    reminderTimerRef.current = setTimeout(triggerReminder, delay);
   };
 
   // ---------------- STOP ----------------
@@ -256,17 +270,14 @@ function MainBody() {
       <select value={minute} onChange={e => setMinute(e.target.value)}>{minutes.map(m => <option key={m}>{m}</option>)}</select>
       <select value={ampm} onChange={e => setAmPm(e.target.value)}><option>AM</option><option>PM</option></select>
 
-      <button onClick={() => setTimeout(triggerReminder, getDelay())}>
-        ➕ Add Reminder
+      <button onClick={addReminder}>
+        {addedSuccess ? "✅ Reminder Added" : "➕ Add Reminder"}
       </button>
 
       {isRinging && (
-        <>
-          {medicineImage && <img src={medicineImage} style={{ width: 140, marginTop: 10 }} />}
-          <button onClick={markAsTaken} style={{ background: "green", color: "#fff", width: "100%", marginTop: 10 }}>
-            ✅ Mark as Taken
-          </button>
-        </>
+        <button onClick={markAsTaken} style={{ background: "green", color: "#fff", width: "100%", marginTop: 10 }}>
+          ✅ Mark as Taken
+        </button>
       )}
 
       <hr />
@@ -283,7 +294,6 @@ function MainBody() {
               🗑 Delete Selected
             </button>
           )}
-
           {history.map(h => (
             <div key={h.id}>
               <input type="checkbox" onChange={() => toggleSelect(h.id)} />
@@ -293,7 +303,6 @@ function MainBody() {
         </>
       )}
 
-      {/* Advertisement */}
       <div style={{ marginTop: 30, background: "#f1f5f9", padding: 15, textAlign: "center" }}>
         <small>Advertisement</small>
         <div style={{ height: 60, background: "#e5e7eb", marginTop: 6 }} />
