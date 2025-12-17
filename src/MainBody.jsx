@@ -37,15 +37,16 @@ function MainBody() {
       reg.showNotification("🔔 Medicine Reminder", {
         body: `${reminder.medicine} - ${reminder.dose}`,
         icon: "/icons/icon-192.png",
-        image: reminder.image || undefined, // 🖼 medicine image
+        image: reminder.image || undefined,
         badge: "/icons/icon-192.png",
-        requireInteraction: true, // stays on lock screen
-        vibrate: [200, 100, 200], // vibration fallback
+        requireInteraction: true,
+        vibrate: [200, 100, 200],
+        data: { url: "/" },
       });
     });
   };
 
-  // ---------------- ALARM ----------------
+  // ---------------- ALARM (APP OPEN ONLY) ----------------
   const playAlarm = () => {
     const a = new Audio("/alarm.mp3");
     a.loop = true;
@@ -79,10 +80,10 @@ function MainBody() {
       image: medicineImage,
     };
 
-    // 🔔 System notification (works when app is closed / locked)
+    // 🔔 System notification (closed / locked / background)
     showSystemNotification(reminder);
 
-    // 📱 App UI + alarm (when app is open)
+    // 📱 In-app UI + alarm (only if app is open)
     setActiveReminder(reminder);
     setIsRinging(true);
     playAlarm();
