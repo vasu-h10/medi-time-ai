@@ -37,10 +37,10 @@ function MainBody() {
       reg.showNotification("🔔 Medicine Reminder", {
         body: `${reminder.medicine} - ${reminder.dose}`,
         icon: "/icons/icon-192.png",
-        image: reminder.image || undefined, // 🖼 medicine photo
+        image: reminder.image || undefined, // 🖼 medicine image
         badge: "/icons/icon-192.png",
-        requireInteraction: true,
-        vibrate: [200, 100, 200], // Android default alert
+        requireInteraction: true, // stays on lock screen
+        vibrate: [200, 100, 200], // vibration fallback
       });
     });
   };
@@ -71,13 +71,15 @@ function MainBody() {
 
   // ---------------- REMINDER ----------------
   const triggerReminder = () => {
+    if (!medicineName) return;
+
     const reminder = {
       medicine: medicineName,
       dose,
       image: medicineImage,
     };
 
-    // 🔔 Show system notification (works when app is closed / locked)
+    // 🔔 System notification (works when app is closed / locked)
     showSystemNotification(reminder);
 
     // 📱 App UI + alarm (when app is open)
@@ -120,6 +122,13 @@ function MainBody() {
         value={medicineName}
         onChange={(e) => setMedicineName(e.target.value)}
       />
+
+      <select value={dose} onChange={(e) => setDose(e.target.value)}>
+        <option>10 mg</option>
+        <option>20 mg</option>
+        <option>50 mg</option>
+        <option>100 mg</option>
+      </select>
 
       <input type="file" accept="image/*" onChange={onImagePick} />
 
@@ -168,7 +177,7 @@ function MainBody() {
         history.map((h) => (
           <div key={h.id} className="history-item">
             <strong>{h.medicine}</strong> — {h.dose}
-            {h.image && <img src={h.image} />}
+            {h.image && <img src={h.image} alt="Medicine" />}
             {h.takenAt && (
               <div className="taken-time">✅ Taken: {h.takenAt}</div>
             )}
