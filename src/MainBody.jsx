@@ -198,6 +198,17 @@ const hasTimeConflict = (newDelayMs) => {
     return Math.abs(h.scheduledAt - newTime) < ONE_MINUTE;
   });
 };
+  //-------------TIMESSTAMP--------------------
+const formatDateTime = (ts) => {
+  if (!ts) return null;
+  return new Date(ts).toLocaleString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
 // ---------------- ADD REMINDER (SAFE + CONFLICT FREE) ----------------
 const addReminder = () => {
   const delay = getDelay();
@@ -322,11 +333,42 @@ const addReminder = () => {
             </button>
           )}
           {history.map(h => (
-            <div key={h.id}>
-              <input type="checkbox" onChange={() => toggleSelect(h.id)} />
-              {h.image && <img src={h.image} style={{ width: 50 }} />} {h.medicine}
-            </div>
-          ))}
+  <div
+    key={h.id}
+    style={{
+      border: "1px solid #e5e7eb",
+      borderRadius: 8,
+      padding: 10,
+      marginTop: 8,
+    }}
+  >
+    <input
+      type="checkbox"
+      onChange={() => toggleSelect(h.id)}
+      style={{ marginRight: 8 }}
+    />
+
+    <strong>💊 {h.medicine}</strong> — {h.dose}
+
+    {h.image && (
+      <div style={{ marginTop: 6 }}>
+        <img src={h.image} style={{ width: 70, borderRadius: 6 }} />
+      </div>
+    )}
+
+    {h.scheduledAt && (
+      <div style={{ fontSize: 12, marginTop: 6 }}>
+        ⏰ <b>Scheduled:</b> {formatDateTime(h.scheduledAt)}
+      </div>
+    )}
+
+    {h.takenAt && (
+      <div style={{ fontSize: 12, marginTop: 4, color: "green" }}>
+        ✅ <b>Taken:</b> {h.takenAt}
+      </div>
+    )}
+  </div>
+))}
         </>
       )}
 
