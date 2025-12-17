@@ -12,45 +12,38 @@ function MainBody() {
   const [dose, setDose] = useState("20 mg");
   const [medicineImage, setMedicineImage] = useState(null);
 
-  const [hour, setHour] = useState("08");
-  const [minute, setMinute] = useState("00");
-  const [ampm, setAmPm] = useState("AM");
-
   const [history, setHistory] = useState(
     JSON.parse(localStorage.getItem("history") || "[]")
   );
-  const [selectedHistory, setSelectedHistory] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
-
-  const [voiceLang, setVoiceLang] = useState("en-IN");
-  const [voices, setVoices] = useState([]);
 
   const [isRinging, setIsRinging] = useState(false);
   const [addedSuccess, setAddedSuccess] = useState(false);
 
   // ---------------- REFS ----------------
   const alarmRef = useRef(null);
-  const stopSpeechRef = useRef(null);
-  const reminderTimerRef = useRef(null);
 
-  // ---------------- CONSTANTS ----------------
-  const doses = ["10 mg", "20 mg", "50 mg", "100 mg", "250 mg", "500 mg"];
-  const hours = Array.from({ length: 12 }, (_, i) =>
-    String(i + 1).padStart(2, "0")
-  );
-  const minutes = Array.from({ length: 60 }, (_, i) =>
-    String(i).padStart(2, "0")
-  );
+  // ---------------- STORAGE ----------------
+  useEffect(() => {
+    localStorage.setItem("history", JSON.stringify(history));
+    localStorage.setItem("patientName", patientName);
+  }, [history, patientName]);
 
-  // ---------------- HELPERS ----------------
-  const formatDateTime = (ts) =>
-    new Date(ts).toLocaleString(undefined, {
-      year: "numeric",
-      month: "short",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
+  // ---------------- SYSTEM NOTIFICATION ----------------
+  const showSystemNotification = (reminder) => {
+    if (!("serviceWorker" in navigator)) return;
+
+    navigator.serviceWorker.ready.then((reg) => {
+      reg.showNotification("🔔 Medicine Reminder", {
+        body: `${reminder.medicine} - ${reminder.dose}`,
+        icon: "/icons/icon-192.png",
+        image: reminder.image || undefined, // 🖼 medicine photo
+        badge: "/icons/icon-192.png",
+        requireInteraction: true,
+        vibrate: [200, 100, 200], // Android default alert
+      });
     });
+  };
 
   // ---------------- ALARM ----------------
   const playAlarm = () => {
@@ -66,19 +59,36 @@ function MainBody() {
     alarmRef.current = null;
   };
 
+  // ---------------- IMAGE PICK ----------------
+  const onImagePick = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => setMedicineImage(reader.result);
+    reader.readAsDataURL(file);
+  };
+
   // ---------------- REMINDER ----------------
   const triggerReminder = () => {
-    setActiveReminder({
+    const reminder = {
       medicine: medicineName,
       dose,
       image: medicineImage,
-    });
+    };
+
+    // 🔔 Show system notification (works when app is closed / locked)
+    showSystemNotification(reminder);
+
+    // 📱 App UI + alarm (when app is open)
+    setActiveReminder(reminder);
     setIsRinging(true);
     playAlarm();
   };
 
   const markAsTaken = () => {
     stopAlarm();
+
     setHistory((h) => [
       {
         id: Date.now(),
@@ -89,6 +99,7 @@ function MainBody() {
       },
       ...h,
     ]);
+
     setIsRinging(false);
     setActiveReminder(null);
   };
@@ -110,9 +121,16 @@ function MainBody() {
         onChange={(e) => setMedicineName(e.target.value)}
       />
 
-      <input type="file" accept="image/*" />
+      <input type="file" accept="image/*" onChange={onImagePick} />
 
-      <button onClick={triggerReminder} className="primary-btn">
+      <button
+        onClick={() => {
+          setAddedSuccess(true);
+          setTimeout(() => setAddedSuccess(false), 2000);
+          triggerReminder();
+        }}
+        className="primary-btn"
+      >
         {addedSuccess ? "✅ Reminder Added" : "➕ Add Reminder"}
       </button>
 
