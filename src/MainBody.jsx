@@ -41,7 +41,7 @@ function MainBody() {
   // ---------------- REFS ----------------
   const alarmRef = useRef(null);
   const stopSpeechRef = useRef(null);
-  const reminderTimerRef = useRef(null); // ✅ prevents conflicts
+  const reminderTimerRef = useRef(null); // prevents conflicts
 
   // ---------------- CONSTANTS ----------------
   const doses = ["10 mg", "20 mg", "50 mg", "100 mg", "250 mg", "500 mg"];
@@ -125,7 +125,6 @@ function MainBody() {
 
     const speakOnce = () => {
       if (stopped) return;
-
       const u = new SpeechSynthesisUtterance(text);
       if (voice) u.voice = voice;
       u.lang = voice?.lang || "en-IN";
@@ -189,16 +188,14 @@ function MainBody() {
     stopSpeechRef.current = speakLoop(getReminderText());
   };
 
-  // ---------------- ADD REMINDER (SAFE) ----------------
+  // ---------------- ADD REMINDER ----------------
   const addReminder = () => {
     const delay = getDelay();
     if (delay <= 0) return;
 
-    // ✅ success UI
     setAddedSuccess(true);
     setTimeout(() => setAddedSuccess(false), 2000);
 
-    // ❌ cancel previous reminder
     if (reminderTimerRef.current) {
       clearTimeout(reminderTimerRef.current);
     }
