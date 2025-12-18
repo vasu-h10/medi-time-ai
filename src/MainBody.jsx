@@ -15,7 +15,7 @@ function MainBody() {
   // ⏰ Scheduling
   const [reminderType, setReminderType] = useState("once");
 
-  // 🕒 12-hour time
+  // 🕒 12-hour time (MINUTE-BY-MINUTE)
   const [hour, setHour] = useState("08");
   const [minute, setMinute] = useState("00");
   const [ampm, setAmPm] = useState("AM");
@@ -46,7 +46,7 @@ function MainBody() {
     reader.readAsDataURL(file);
   };
 
-  // ---------------- TIME → UTC ----------------
+  // ---------------- TIME → UTC (SERVER SAFE) ----------------
   const buildTriggerAt = () => {
     let hh = parseInt(hour, 10);
     if (ampm === "PM" && hh !== 12) hh += 12;
@@ -66,17 +66,18 @@ function MainBody() {
     const triggerAt = buildTriggerAt();
 
     const reminder = {
+      patientName,
       medicine: medicineName,
       dose,
       image: medicineImage,
       triggerAt,
       repeat: reminderType,
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      createdAt: Date.now(),
     };
 
-    // ⛔ NO local timers here
-    // ✅ This object must be saved to Firestore (next step)
-
+    // ⛔ No local timers
+    // ✅ This object is meant to be saved to Firestore (next step)
     console.log("Reminder ready for server:", reminder);
 
     setAddedSuccess(true);
@@ -107,6 +108,7 @@ function MainBody() {
         <option>100 mg</option>
       </select>
 
+      {/* ⏰ TIME (MINUTE-BY-MINUTE) */}
       <label>⏰ Reminder time</label>
       <div className="time-row">
         <select value={hour} onChange={(e) => setHour(e.target.value)}>
@@ -129,6 +131,7 @@ function MainBody() {
         </select>
       </div>
 
+      {/* 🔁 TYPE */}
       <label>🔁 Reminder type</label>
       <select
         value={reminderType}
