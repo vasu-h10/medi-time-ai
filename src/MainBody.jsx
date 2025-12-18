@@ -1,7 +1,7 @@
-import { useEffect, useState, useRef } from "react";
-import React from "react";
+import React, { useEffect, useState, useRef } from "react";
 import "./styles/global.css";
 
+/* MainBody */
 function MainBody() {
   // ---------------- STATES ----------------
   const [activeReminder, setActiveReminder] = useState(null);
@@ -13,6 +13,13 @@ function MainBody() {
   const [dose, setDose] = useState("20 mg");
   const [medicineImage, setMedicineImage] = useState(null);
 
+  // ⏰ NEW: scheduling states
+  const [reminderType, setReminderType] = useState("once"); // once | everyday | specific
+  const [reminderTime, setReminderTime] = useState("08:00");
+  const [reminderDate, setReminderDate] = useState(
+    new Date().toISOString().split("T")[0]
+  );
+
   const [history, setHistory] = useState(
     JSON.parse(localStorage.getItem("history") || "[]")
   );
@@ -23,6 +30,7 @@ function MainBody() {
 
   // ---------------- REFS ----------------
   const alarmRef = useRef(null);
+  const timerRef = useRef(null);
 
   // ---------------- STORAGE ----------------
   useEffect(() => {
@@ -47,7 +55,7 @@ function MainBody() {
     });
   };
 
-  // ---------------- ALARM (APP OPEN ONLY) ----------------
+  // ---------------- ALARM ----------------
   const playAlarm = () => {
     const a = new Audio("/alarm.mp3");
     a.loop = true;
@@ -71,27 +79,59 @@ function MainBody() {
     reader.readAsDataURL(file);
   };
 
-  // ---------------- REMINDER ----------------
+  // ---------------- SCHEDULING ----------------
+  const scheduleReminder = (reminder) => {
+    const [hh, mm] = reminderTime.split(":").map(Number);
+    let target = new Date();
+
+    if (reminderType === "specific") {
+      target = new Date(`${reminderDate}T${reminderTime}`);
+    } else {
+      target.setHours(hh, mm, 0, 0);
+      if (target < new Date()) {
+        target.setDate(target.getDate() + 1);
+      }
+    }
+
+    const delay = target.getTime() - Date.now();
+    if (delay < 0) return;
+
+    timerRef.current = setTimeout(() => {
+      showSystemNotification(reminder);
+      playAlarm();
+      setActiveReminder(reminder);
+      setIsRinging(true);
+
+      if (reminderType === "everyday") {
+        setInterval(() => {
+          showSystemNotification(reminder);
+        }, 24 * 60 * 60 * 1000);
+      }
+    }, delay);
+  };
+
+  // ---------------- ADD REMINDER ----------------
   const triggerReminder = () => {
-    if (!medicineName) return;
+    if (!medicineName || !reminderTime) return;
 
     const reminder = {
       medicine: medicineName,
       dose,
       image: medicineImage,
+      time: reminderTime,
+      type: reminderType,
+      date: reminderDate,
     };
 
-    // 🔔 System notification (closed / locked / background)
-    showSystemNotification(reminder);
+    scheduleReminder(reminder);
 
-    // 📱 In-app UI + alarm (only if app is open)
-    setActiveReminder(reminder);
-    setIsRinging(true);
-    playAlarm();
+    setAddedSuccess(true);
+    setTimeout(() => setAddedSuccess(false), 2000);
   };
 
   const markAsTaken = () => {
     stopAlarm();
+    clearTimeout(timerRef.current);
 
     setHistory((h) => [
       {
@@ -132,14 +172,40 @@ function MainBody() {
         <option>100 mg</option>
       </select>
 
+      {/* ⏰ Time */}
+      <label>⏰ Reminder time</label>
+      <input
+        type="time"
+        value={reminderTime}
+        onChange={(e) => setReminderTime(e.target.value)}
+      />
+
+      {/* 🔁 Type */}
+      <label>🔁 Reminder type</label>
+      <select
+        value={reminderType}
+        onChange={(e) => setReminderType(e.target.value)}
+      >
+        <option value="once">Once (today)</option>
+        <option value="everyday">Every day</option>
+        <option value="specific">Specific date</option>
+      </select>
+
+      {reminderType === "specific" && (
+        <>
+          <label>📅 Select date</label>
+          <input
+            type="date"
+            value={reminderDate}
+            onChange={(e) => setReminderDate(e.target.value)}
+          />
+        </>
+      )}
+
       <input type="file" accept="image/*" onChange={onImagePick} />
 
       <button
-        onClick={() => {
-          setAddedSuccess(true);
-          setTimeout(() => setAddedSuccess(false), 2000);
-          triggerReminder();
-        }}
+        onClick={triggerReminder}
         className="primary-btn"
       >
         {addedSuccess ? "✅ Reminder Added" : "➕ Add Reminder"}
@@ -180,9 +246,7 @@ function MainBody() {
           <div key={h.id} className="history-item">
             <strong>{h.medicine}</strong> — {h.dose}
             {h.image && <img src={h.image} alt="Medicine" />}
-            {h.takenAt && (
-              <div className="taken-time">✅ Taken: {h.takenAt}</div>
-            )}
+            <div className="taken-time">✅ Taken: {h.takenAt}</div>
           </div>
         ))}
     </main>
