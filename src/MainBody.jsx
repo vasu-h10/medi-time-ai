@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import "./styles/global.css";
+import "./styles/mainbody.css";
 
 /* MainBody */
 function MainBody() {
@@ -14,9 +14,9 @@ function MainBody() {
   const [medicineImage, setMedicineImage] = useState(null);
 
   // ⏰ Scheduling
-  const [reminderType, setReminderType] = useState("once"); // once | everyday | specific
+  const [reminderType, setReminderType] = useState("once");
 
-  // ⏰ 12-hour time (AM/PM)
+  // 🕒 12-hour time
   const [hour, setHour] = useState("08");
   const [minute, setMinute] = useState("00");
   const [ampm, setAmPm] = useState("AM");
@@ -55,13 +55,13 @@ function MainBody() {
         badge: "/icons/icon-192.png",
         requireInteraction: true,
         vibrate: [300, 150, 300],
-        silent: false, // 🔑 ensures system sound
+        silent: false,
         data: { url: "/" },
       });
     });
   };
 
-  // ---------------- AUDIO UNLOCK (REQUIRED) ----------------
+  // ---------------- AUDIO UNLOCK (MANDATORY) ----------------
   const enableAudio = () => {
     if (audioEnabled) return;
 
@@ -75,7 +75,7 @@ function MainBody() {
       .catch(() => {});
   };
 
-  // ---------------- VOICE (APP OPEN ONLY) ----------------
+  // ---------------- VOICE ----------------
   const speakReminder = (text) => {
     if (!("speechSynthesis" in window)) return;
 
@@ -115,24 +115,18 @@ function MainBody() {
     reader.readAsDataURL(file);
   };
 
-  // ---------------- TIME CONVERSION ----------------
-  const get24HourTime = () => {
-    let hh = parseInt(hour, 10);
-    if (ampm === "PM" && hh !== 12) hh += 12;
-    if (ampm === "AM" && hh === 12) hh = 0;
-    return { hh, mm: parseInt(minute, 10) };
-  };
-
   // ---------------- SCHEDULING ----------------
   const scheduleReminder = (reminder) => {
-    const { hh, mm } = get24HourTime();
+    let hh = parseInt(hour);
+    if (ampm === "PM" && hh !== 12) hh += 12;
+    if (ampm === "AM" && hh === 12) hh = 0;
+
     let target = new Date();
 
     if (reminderType === "specific") {
-      target = new Date(reminderDate);
-      target.setHours(hh, mm, 0, 0);
+      target = new Date(`${reminderDate}T${hh.toString().padStart(2, "0")}:${minute}`);
     } else {
-      target.setHours(hh, mm, 0, 0);
+      target.setHours(hh, parseInt(minute), 0, 0);
       if (target < new Date()) target.setDate(target.getDate() + 1);
     }
 
@@ -141,18 +135,13 @@ function MainBody() {
 
     timerRef.current = setTimeout(() => {
       showSystemNotification(reminder);
-
       setActiveReminder(reminder);
       setIsRinging(true);
       playAlarm();
-      speakReminder(
-        `Time to take ${reminder.medicine}, dose ${reminder.dose}`
-      );
+      speakReminder(`Time to take ${reminder.medicine}, dose ${reminder.dose}`);
 
       if (reminderType === "everyday") {
-        setInterval(() => {
-          showSystemNotification(reminder);
-        }, 24 * 60 * 60 * 1000);
+        setInterval(() => showSystemNotification(reminder), 86400000);
       }
     }, delay);
   };
@@ -161,7 +150,7 @@ function MainBody() {
   const triggerReminder = () => {
     if (!medicineName) return;
 
-    enableAudio(); // 🔓 unlock audio on user click
+    enableAudio(); // 🔓 unlock audio on user tap
 
     const reminder = {
       medicine: medicineName,
@@ -231,11 +220,9 @@ function MainBody() {
         </select>
 
         <select value={minute} onChange={(e) => setMinute(e.target.value)}>
-          {["00", "05", "10", "15", "20", "25", "30", "35", "40", "45", "50", "55"].map(
-            (m) => (
-              <option key={m}>{m}</option>
-            )
-          )}
+          {["00","05","10","15","20","25","30","35","40","45","50","55"].map(m => (
+            <option key={m}>{m}</option>
+          ))}
         </select>
 
         <select value={ampm} onChange={(e) => setAmPm(e.target.value)}>
@@ -245,10 +232,7 @@ function MainBody() {
       </div>
 
       <label>🔁 Reminder type</label>
-      <select
-        value={reminderType}
-        onChange={(e) => setReminderType(e.target.value)}
-      >
+      <select value={reminderType} onChange={(e) => setReminderType(e.target.value)}>
         <option value="once">Once</option>
         <option value="everyday">Every day</option>
         <option value="specific">Specific date</option>
@@ -257,11 +241,7 @@ function MainBody() {
       {reminderType === "specific" && (
         <>
           <label>📅 Select date</label>
-          <input
-            type="date"
-            value={reminderDate}
-            onChange={(e) => setReminderDate(e.target.value)}
-          />
+          <input type="date" value={reminderDate} onChange={(e) => setReminderDate(e.target.value)} />
         </>
       )}
 
@@ -274,23 +254,12 @@ function MainBody() {
       {isRinging && activeReminder && (
         <div className="active-reminder">
           <h3>🔔 Medicine Reminder</h3>
-
           {activeReminder.image && (
-            <img
-              src={activeReminder.image}
-              alt="Medicine"
-              className="reminder-image"
-            />
+            <img src={activeReminder.image} alt="Medicine" className="reminder-image" />
           )}
-
-          <p>
-            💊 <b>{activeReminder.medicine}</b>
-          </p>
+          <p><b>{activeReminder.medicine}</b></p>
           <p>Dose: {activeReminder.dose}</p>
-
-          <button onClick={markAsTaken} className="confirm-btn">
-            ✅ Mark as Taken
-          </button>
+          <button onClick={markAsTaken} className="confirm-btn">✅ Mark as Taken</button>
         </div>
       )}
 
