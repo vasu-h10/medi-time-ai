@@ -6,6 +6,15 @@
   font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
+/* Labels */
+label {
+  display: block;
+  margin-top: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+}
+
 /* Inputs & selects */
 input,
 select {
@@ -16,6 +25,12 @@ select {
   border: 1px solid #ccc;
   font-size: 15px;
   outline: none;
+  background: #fff;
+}
+
+input[type="time"],
+input[type="date"] {
+  margin-top: 6px;
 }
 
 input:focus,
@@ -94,6 +109,13 @@ select:focus {
   font-size: 12px;
   color: #16a34a;
   margin-top: 4px;
+}
+
+/* Divider */
+hr {
+  margin: 24px 0;
+  border: none;
+  border-top: 1px solid #e5e7eb;
 }
 
 /* Pulse animation for active reminder */
