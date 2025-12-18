@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from "react";
-import "./styles/main.css";
+import React from "react";
+import "../styles/global.css"; // ✅ correct
 
 function MainBody() {
   // ---------------- STATES ----------------
