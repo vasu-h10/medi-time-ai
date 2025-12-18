@@ -1,10 +1,8 @@
 {
-  "headers": [
+  "routes": [
     {
-      "source": "/firebase-messaging-sw.js",
-      "headers": [
-        { "key": "Cache-Control", "value": "no-cache" }
-      ]
+      "src": "/firebase-messaging-sw.js",
+      "dest": "/public/firebase-messaging-sw.js"
     }
   ]
 }
