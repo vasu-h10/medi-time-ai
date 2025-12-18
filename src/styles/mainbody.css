@@ -1,3 +1,4 @@
+/* App container */
 .app {
   padding: 20px;
   max-width: 420px;
@@ -5,6 +6,7 @@
   font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
+/* Labels */
 label {
   display: block;
   margin-top: 12px;
@@ -13,6 +15,7 @@ label {
   color: #374151;
 }
 
+/* Inputs & selects */
 input,
 select {
   width: 100%;
@@ -25,16 +28,18 @@ select {
   background: #fff;
 }
 
-input[type="time"],
-input[type="date"] {
-  margin-top: 6px;
-}
-
 input:focus,
 select:focus {
   border-color: #2563eb;
 }
 
+/* Time picker row (NEW – replaces inline style) */
+.time-row {
+  display: flex;
+  gap: 8px;
+}
+
+/* Primary button */
 .primary-btn {
   width: 100%;
   padding: 14px;
@@ -47,6 +52,7 @@ select:focus {
   cursor: pointer;
 }
 
+/* Confirm / taken button */
 .confirm-btn {
   width: 100%;
   padding: 14px;
@@ -58,6 +64,7 @@ select:focus {
   cursor: pointer;
 }
 
+/* Active reminder */
 .active-reminder {
   margin-top: 20px;
   padding: 16px;
@@ -68,12 +75,14 @@ select:focus {
   animation: pulse 1.2s infinite;
 }
 
+/* Medicine image */
 .reminder-image {
   width: 140px;
   border-radius: 10px;
   margin: 12px 0;
 }
 
+/* History */
 .history-item {
   border: 1px solid #e5e7eb;
   border-radius: 8px;
@@ -88,20 +97,29 @@ select:focus {
   margin-top: 6px;
 }
 
+/* Taken timestamp */
 .taken-time {
   font-size: 12px;
   color: #16a34a;
   margin-top: 4px;
 }
 
+/* Divider */
 hr {
   margin: 24px 0;
   border: none;
   border-top: 1px solid #e5e7eb;
 }
 
+/* Pulse animation */
 @keyframes pulse {
-  0% { box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.7); }
-  70% { box-shadow: 0 0 0 12px rgba(6, 182, 212, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(6, 182, 212, 0); }
+  0% {
+    box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 12px rgba(6, 182, 212, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(6, 182, 212, 0);
+  }
 }
