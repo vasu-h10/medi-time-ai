@@ -1,1 +1,12 @@
+# dependencies
+node_modules/
+
+# build output
+dist/
+
+# firebase
+.firebaserc
+firebase.json
+
+# vercel
 .vercel
