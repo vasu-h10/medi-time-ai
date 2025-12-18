@@ -14,8 +14,13 @@ function MainBody() {
   const [medicineImage, setMedicineImage] = useState(null);
 
   // ⏰ Scheduling
-  const [reminderType, setReminderType] = useState("once");
-  const [reminderTime, setReminderTime] = useState("08:00");
+  const [reminderType, setReminderType] = useState("once"); // once | everyday | specific
+
+  // ⏰ 12-hour time (AM/PM)
+  const [hour, setHour] = useState("08");
+  const [minute, setMinute] = useState("00");
+  const [ampm, setAmPm] = useState("AM");
+
   const [reminderDate, setReminderDate] = useState(
     new Date().toISOString().split("T")[0]
   );
@@ -47,16 +52,16 @@ function MainBody() {
       reg.showNotification("🔔 Medicine Reminder", {
         body: `${reminder.medicine} - ${reminder.dose}`,
         icon: "/icons/icon-192.png",
-        image: reminder.image || undefined,
         badge: "/icons/icon-192.png",
         requireInteraction: true,
-        vibrate: [200, 100, 200],
+        vibrate: [300, 150, 300],
+        silent: false, // 🔑 ensures system sound
         data: { url: "/" },
       });
     });
   };
 
-  // ---------------- AUDIO UNLOCK (IMPORTANT) ----------------
+  // ---------------- AUDIO UNLOCK (REQUIRED) ----------------
   const enableAudio = () => {
     if (audioEnabled) return;
 
@@ -110,13 +115,22 @@ function MainBody() {
     reader.readAsDataURL(file);
   };
 
+  // ---------------- TIME CONVERSION ----------------
+  const get24HourTime = () => {
+    let hh = parseInt(hour, 10);
+    if (ampm === "PM" && hh !== 12) hh += 12;
+    if (ampm === "AM" && hh === 12) hh = 0;
+    return { hh, mm: parseInt(minute, 10) };
+  };
+
   // ---------------- SCHEDULING ----------------
   const scheduleReminder = (reminder) => {
-    const [hh, mm] = reminderTime.split(":").map(Number);
+    const { hh, mm } = get24HourTime();
     let target = new Date();
 
     if (reminderType === "specific") {
-      target = new Date(`${reminderDate}T${reminderTime}`);
+      target = new Date(reminderDate);
+      target.setHours(hh, mm, 0, 0);
     } else {
       target.setHours(hh, mm, 0, 0);
       if (target < new Date()) target.setDate(target.getDate() + 1);
@@ -145,15 +159,15 @@ function MainBody() {
 
   // ---------------- ADD REMINDER ----------------
   const triggerReminder = () => {
-    if (!medicineName || !reminderTime) return;
+    if (!medicineName) return;
 
-    enableAudio(); // 🔓 unlock sound on user tap
+    enableAudio(); // 🔓 unlock audio on user click
 
     const reminder = {
       medicine: medicineName,
       dose,
       image: medicineImage,
-      time: reminderTime,
+      time: `${hour}:${minute} ${ampm}`,
       type: reminderType,
       date: reminderDate,
     };
@@ -208,18 +222,34 @@ function MainBody() {
       </select>
 
       <label>⏰ Reminder time</label>
-      <input
-        type="time"
-        value={reminderTime}
-        onChange={(e) => setReminderTime(e.target.value)}
-      />
+      <div style={{ display: "flex", gap: "8px" }}>
+        <select value={hour} onChange={(e) => setHour(e.target.value)}>
+          {[...Array(12)].map((_, i) => {
+            const h = String(i + 1).padStart(2, "0");
+            return <option key={h}>{h}</option>;
+          })}
+        </select>
+
+        <select value={minute} onChange={(e) => setMinute(e.target.value)}>
+          {["00", "05", "10", "15", "20", "25", "30", "35", "40", "45", "50", "55"].map(
+            (m) => (
+              <option key={m}>{m}</option>
+            )
+          )}
+        </select>
+
+        <select value={ampm} onChange={(e) => setAmPm(e.target.value)}>
+          <option>AM</option>
+          <option>PM</option>
+        </select>
+      </div>
 
       <label>🔁 Reminder type</label>
       <select
         value={reminderType}
         onChange={(e) => setReminderType(e.target.value)}
       >
-        <option value="once">Once (today)</option>
+        <option value="once">Once</option>
         <option value="everyday">Every day</option>
         <option value="specific">Specific date</option>
       </select>
