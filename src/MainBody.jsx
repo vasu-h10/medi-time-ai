@@ -13,8 +13,8 @@ function MainBody() {
   const [dose, setDose] = useState("20 mg");
   const [medicineImage, setMedicineImage] = useState(null);
 
-  // ⏰ NEW: scheduling states
-  const [reminderType, setReminderType] = useState("once"); // once | everyday | specific
+  // ⏰ Scheduling
+  const [reminderType, setReminderType] = useState("once");
   const [reminderTime, setReminderTime] = useState("08:00");
   const [reminderDate, setReminderDate] = useState(
     new Date().toISOString().split("T")[0]
@@ -27,6 +27,7 @@ function MainBody() {
 
   const [isRinging, setIsRinging] = useState(false);
   const [addedSuccess, setAddedSuccess] = useState(false);
+  const [audioEnabled, setAudioEnabled] = useState(false);
 
   // ---------------- REFS ----------------
   const alarmRef = useRef(null);
@@ -55,8 +56,37 @@ function MainBody() {
     });
   };
 
+  // ---------------- AUDIO UNLOCK (IMPORTANT) ----------------
+  const enableAudio = () => {
+    if (audioEnabled) return;
+
+    const a = new Audio("/alarm.mp3");
+    a.volume = 0;
+    a.play()
+      .then(() => {
+        a.pause();
+        setAudioEnabled(true);
+      })
+      .catch(() => {});
+  };
+
+  // ---------------- VOICE (APP OPEN ONLY) ----------------
+  const speakReminder = (text) => {
+    if (!("speechSynthesis" in window)) return;
+
+    const msg = new SpeechSynthesisUtterance(text);
+    msg.lang = "en-IN";
+    msg.rate = 0.9;
+    msg.pitch = 1;
+
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(msg);
+  };
+
   // ---------------- ALARM ----------------
   const playAlarm = () => {
+    if (!audioEnabled) return;
+
     const a = new Audio("/alarm.mp3");
     a.loop = true;
     a.volume = 1;
@@ -67,6 +97,7 @@ function MainBody() {
   const stopAlarm = () => {
     alarmRef.current?.pause();
     alarmRef.current = null;
+    window.speechSynthesis?.cancel();
   };
 
   // ---------------- IMAGE PICK ----------------
@@ -88,9 +119,7 @@ function MainBody() {
       target = new Date(`${reminderDate}T${reminderTime}`);
     } else {
       target.setHours(hh, mm, 0, 0);
-      if (target < new Date()) {
-        target.setDate(target.getDate() + 1);
-      }
+      if (target < new Date()) target.setDate(target.getDate() + 1);
     }
 
     const delay = target.getTime() - Date.now();
@@ -98,9 +127,13 @@ function MainBody() {
 
     timerRef.current = setTimeout(() => {
       showSystemNotification(reminder);
-      playAlarm();
+
       setActiveReminder(reminder);
       setIsRinging(true);
+      playAlarm();
+      speakReminder(
+        `Time to take ${reminder.medicine}, dose ${reminder.dose}`
+      );
 
       if (reminderType === "everyday") {
         setInterval(() => {
@@ -113,6 +146,8 @@ function MainBody() {
   // ---------------- ADD REMINDER ----------------
   const triggerReminder = () => {
     if (!medicineName || !reminderTime) return;
+
+    enableAudio(); // 🔓 unlock sound on user tap
 
     const reminder = {
       medicine: medicineName,
@@ -172,7 +207,6 @@ function MainBody() {
         <option>100 mg</option>
       </select>
 
-      {/* ⏰ Time */}
       <label>⏰ Reminder time</label>
       <input
         type="time"
@@ -180,7 +214,6 @@ function MainBody() {
         onChange={(e) => setReminderTime(e.target.value)}
       />
 
-      {/* 🔁 Type */}
       <label>🔁 Reminder type</label>
       <select
         value={reminderType}
@@ -204,10 +237,7 @@ function MainBody() {
 
       <input type="file" accept="image/*" onChange={onImagePick} />
 
-      <button
-        onClick={triggerReminder}
-        className="primary-btn"
-      >
+      <button onClick={triggerReminder} className="primary-btn">
         {addedSuccess ? "✅ Reminder Added" : "➕ Add Reminder"}
       </button>
 
