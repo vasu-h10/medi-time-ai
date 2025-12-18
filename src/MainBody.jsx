@@ -108,7 +108,7 @@ function MainBody() {
       </select>
 
       <label>⏰ Reminder time</label>
-      <div style={{ display: "flex", gap: "8px" }}>
+      <div className="time-row">
         <select value={hour} onChange={(e) => setHour(e.target.value)}>
           {[...Array(12)].map((_, i) => {
             const h = String(i + 1).padStart(2, "0");
