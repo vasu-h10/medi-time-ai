@@ -1,11 +1,10 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
+import { DateTime } from "luxon";
 import "./styles/mainbody.css";
 
 /* MainBody */
 function MainBody() {
   // ---------------- STATES ----------------
-  const [activeReminder, setActiveReminder] = useState(null);
-
   const [patientName, setPatientName] = useState(
     localStorage.getItem("patientName") || ""
   );
@@ -29,81 +28,13 @@ function MainBody() {
     JSON.parse(localStorage.getItem("history") || "[]")
   );
   const [showHistory, setShowHistory] = useState(false);
-
-  const [isRinging, setIsRinging] = useState(false);
   const [addedSuccess, setAddedSuccess] = useState(false);
-  const [audioEnabled, setAudioEnabled] = useState(false);
-
-  // ---------------- REFS ----------------
-  const alarmRef = useRef(null);
-  const timerRef = useRef(null);
 
   // ---------------- STORAGE ----------------
   useEffect(() => {
     localStorage.setItem("history", JSON.stringify(history));
     localStorage.setItem("patientName", patientName);
   }, [history, patientName]);
-
-  // ---------------- SYSTEM NOTIFICATION ----------------
-  const showSystemNotification = (reminder) => {
-    if (!("serviceWorker" in navigator)) return;
-
-    navigator.serviceWorker.ready.then((reg) => {
-      reg.showNotification("🔔 Medicine Reminder", {
-        body: `${reminder.medicine} - ${reminder.dose}`,
-        icon: "/icons/icon-192.png",
-        badge: "/icons/icon-192.png",
-        requireInteraction: true,
-        vibrate: [300, 150, 300],
-        silent: false,
-        data: { url: "/" },
-      });
-    });
-  };
-
-  // ---------------- AUDIO UNLOCK (MANDATORY) ----------------
-  const enableAudio = () => {
-    if (audioEnabled) return;
-
-    const a = new Audio("/alarm.mp3");
-    a.volume = 0;
-    a.play()
-      .then(() => {
-        a.pause();
-        setAudioEnabled(true);
-      })
-      .catch(() => {});
-  };
-
-  // ---------------- VOICE ----------------
-  const speakReminder = (text) => {
-    if (!("speechSynthesis" in window)) return;
-
-    const msg = new SpeechSynthesisUtterance(text);
-    msg.lang = "en-IN";
-    msg.rate = 0.9;
-    msg.pitch = 1;
-
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(msg);
-  };
-
-  // ---------------- ALARM ----------------
-  const playAlarm = () => {
-    if (!audioEnabled) return;
-
-    const a = new Audio("/alarm.mp3");
-    a.loop = true;
-    a.volume = 1;
-    a.play().catch(() => {});
-    alarmRef.current = a;
-  };
-
-  const stopAlarm = () => {
-    alarmRef.current?.pause();
-    alarmRef.current = null;
-    window.speechSynthesis?.cancel();
-  };
 
   // ---------------- IMAGE PICK ----------------
   const onImagePick = (e) => {
@@ -115,75 +46,41 @@ function MainBody() {
     reader.readAsDataURL(file);
   };
 
-  // ---------------- SCHEDULING ----------------
-  const scheduleReminder = (reminder) => {
-    let hh = parseInt(hour);
+  // ---------------- TIME → UTC ----------------
+  const buildTriggerAt = () => {
+    let hh = parseInt(hour, 10);
     if (ampm === "PM" && hh !== 12) hh += 12;
     if (ampm === "AM" && hh === 12) hh = 0;
 
-    let target = new Date();
+    const iso = `${reminderDate}T${String(hh).padStart(2, "0")}:${minute}`;
 
-    if (reminderType === "specific") {
-      target = new Date(`${reminderDate}T${hh.toString().padStart(2, "0")}:${minute}`);
-    } else {
-      target.setHours(hh, parseInt(minute), 0, 0);
-      if (target < new Date()) target.setDate(target.getDate() + 1);
-    }
-
-    const delay = target.getTime() - Date.now();
-    if (delay < 0) return;
-
-    timerRef.current = setTimeout(() => {
-      showSystemNotification(reminder);
-      setActiveReminder(reminder);
-      setIsRinging(true);
-      playAlarm();
-      speakReminder(`Time to take ${reminder.medicine}, dose ${reminder.dose}`);
-
-      if (reminderType === "everyday") {
-        setInterval(() => showSystemNotification(reminder), 86400000);
-      }
-    }, delay);
+    return DateTime.fromISO(iso, { zone: "local" })
+      .toUTC()
+      .toMillis();
   };
 
   // ---------------- ADD REMINDER ----------------
-  const triggerReminder = () => {
+  const triggerReminder = async () => {
     if (!medicineName) return;
 
-    enableAudio(); // 🔓 unlock audio on user tap
+    const triggerAt = buildTriggerAt();
 
     const reminder = {
       medicine: medicineName,
       dose,
       image: medicineImage,
-      time: `${hour}:${minute} ${ampm}`,
-      type: reminderType,
-      date: reminderDate,
+      triggerAt,
+      repeat: reminderType,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     };
 
-    scheduleReminder(reminder);
+    // ⛔ NO local timers here
+    // ✅ This object must be saved to Firestore (next step)
+
+    console.log("Reminder ready for server:", reminder);
 
     setAddedSuccess(true);
     setTimeout(() => setAddedSuccess(false), 2000);
-  };
-
-  const markAsTaken = () => {
-    stopAlarm();
-    clearTimeout(timerRef.current);
-
-    setHistory((h) => [
-      {
-        id: Date.now(),
-        medicine: activeReminder.medicine,
-        dose: activeReminder.dose,
-        image: activeReminder.image,
-        takenAt: new Date().toLocaleString(),
-      },
-      ...h,
-    ]);
-
-    setIsRinging(false);
-    setActiveReminder(null);
   };
 
   // ---------------- UI ----------------
@@ -220,9 +117,10 @@ function MainBody() {
         </select>
 
         <select value={minute} onChange={(e) => setMinute(e.target.value)}>
-          {["00","05","10","15","20","25","30","35","40","45","50","55"].map(m => (
-            <option key={m}>{m}</option>
-          ))}
+          {[...Array(60)].map((_, i) => {
+            const m = String(i).padStart(2, "0");
+            return <option key={m}>{m}</option>;
+          })}
         </select>
 
         <select value={ampm} onChange={(e) => setAmPm(e.target.value)}>
@@ -232,7 +130,10 @@ function MainBody() {
       </div>
 
       <label>🔁 Reminder type</label>
-      <select value={reminderType} onChange={(e) => setReminderType(e.target.value)}>
+      <select
+        value={reminderType}
+        onChange={(e) => setReminderType(e.target.value)}
+      >
         <option value="once">Once</option>
         <option value="everyday">Every day</option>
         <option value="specific">Specific date</option>
@@ -241,7 +142,11 @@ function MainBody() {
       {reminderType === "specific" && (
         <>
           <label>📅 Select date</label>
-          <input type="date" value={reminderDate} onChange={(e) => setReminderDate(e.target.value)} />
+          <input
+            type="date"
+            value={reminderDate}
+            onChange={(e) => setReminderDate(e.target.value)}
+          />
         </>
       )}
 
@@ -250,18 +155,6 @@ function MainBody() {
       <button onClick={triggerReminder} className="primary-btn">
         {addedSuccess ? "✅ Reminder Added" : "➕ Add Reminder"}
       </button>
-
-      {isRinging && activeReminder && (
-        <div className="active-reminder">
-          <h3>🔔 Medicine Reminder</h3>
-          {activeReminder.image && (
-            <img src={activeReminder.image} alt="Medicine" className="reminder-image" />
-          )}
-          <p><b>{activeReminder.medicine}</b></p>
-          <p>Dose: {activeReminder.dose}</p>
-          <button onClick={markAsTaken} className="confirm-btn">✅ Mark as Taken</button>
-        </div>
-      )}
 
       <hr />
 
