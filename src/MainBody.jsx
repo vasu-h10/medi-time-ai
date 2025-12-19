@@ -161,37 +161,37 @@ function MainBody() {
 
   // ---------------- ADD REMINDER ----------------
   const triggerReminder = () => {
-    if (!medicineName) return;
+  if (!medicineName) return;
 
-    let target = buildTargetTime();
-    const diff = target.toMillis() - Date.now();
+  let target = buildTargetTime();
+  const now = DateTime.local();
 
-    if (diff < 60000) {
-      alert("Please select a time at least 1 minute from now");
-      return;
-    }
+  // ✅ Auto-fix: allow current minute → next minute
+  if (target <= now) {
+    target = now.plus({ minutes: 1 }).startOf("minute");
+  }
 
-    target = resolveConflictTime(target);
+  // ✅ Resolve 1-minute conflicts with other reminders
+  target = resolveConflictTime(target);
 
-    const reminder = {
-      id: Date.now(),
-      medicine: medicineName,
-      dose,
-      image: medicineImage,
-      triggerAt: target.toMillis(),
-    };
-
-    clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(
-      () => showReminder(reminder),
-      reminder.triggerAt - Date.now()
-    );
-
-    setScheduledReminders((p) => [...p, reminder]);
-    setAddedSuccess(true);
-    setTimeout(() => setAddedSuccess(false), 2000);
+  const reminder = {
+    id: Date.now(),
+    medicine: medicineName,
+    dose,
+    image: medicineImage,
+    triggerAt: target.toMillis(),
   };
 
+  clearTimeout(timerRef.current);
+  timerRef.current = setTimeout(
+    () => showReminder(reminder),
+    reminder.triggerAt - Date.now()
+  );
+
+  setScheduledReminders((p) => [...p, reminder]);
+  setAddedSuccess(true);
+  setTimeout(() => setAddedSuccess(false), 2000);
+};
   // ---------------- MARK AS TAKEN ----------------
   const markAsTaken = () => {
     stopAll();
