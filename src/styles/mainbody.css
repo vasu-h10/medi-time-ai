@@ -99,6 +99,7 @@ select:focus {
   object-fit: cover;
   border-radius: 10px;
   margin: 12px auto;
+  display: block;
 }
 
 /* Placeholder when no image */
@@ -121,6 +122,7 @@ select:focus {
   width: 60px;
   height: 60px;
   font-size: 18px;
+  margin: 0;
 }
 
 /* ===============================
@@ -129,7 +131,7 @@ select:focus {
 .history-item {
   display: flex;
   gap: 10px;
-  align-items: flex-start;
+  align-items: center;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   padding: 10px;
@@ -159,7 +161,7 @@ select:focus {
   background: transparent;
   border: none;
   color: #ef4444;
-  font-size: 14px;
+  font-size: 16px;
   cursor: pointer;
 }
 
@@ -175,6 +177,8 @@ select:focus {
   text-align: center;
   font-size: 14px;
   color: #64748b;
+  width: 100%;        /* ✅ fixed width */
+  box-sizing: border-box;
 }
 
 /* ===============================
