@@ -41,7 +41,6 @@ function MainBody() {
     JSON.parse(localStorage.getItem("history") || "[]")
   );
 
-  const timerRef = useRef(null);
   const audioRef = useRef(null);
   const speakingRef = useRef(false);
 
@@ -57,6 +56,17 @@ function MainBody() {
     );
     localStorage.setItem("history", JSON.stringify(history));
   }, [scheduledReminders, history]);
+
+  // ---------------- RESTORE REMINDERS (CRITICAL) ----------------
+  useEffect(() => {
+    scheduledReminders.forEach((r) => {
+      const delay = r.triggerAt - Date.now();
+      if (delay > 0) {
+        setTimeout(() => showReminder(r), delay);
+      }
+    });
+    // eslint-disable-next-line
+  }, []);
 
   // ---------------- IMAGE PICK ----------------
   const onImagePick = (e) => {
@@ -74,7 +84,7 @@ function MainBody() {
     if (ampm === "AM" && hh === 12) hh = 0;
 
     const iso = `${reminderDate}T${String(hh).padStart(2, "0")}:${minute}`;
-    return DateTime.fromISO(iso, { zone: "local" });
+    return DateTime.fromISO(iso);
   };
 
   // ---------------- CONFLICT (1 MIN GAP) ----------------
@@ -119,24 +129,32 @@ function MainBody() {
     }
   };
 
-  // ---------------- CONTINUOUS VOICE (NO GAP) ----------------
+  // ---------------- CONTINUOUS VOICE (STABLE) ----------------
   const speakContinuously = (text) => {
-    if (!window.speechSynthesis || speakingRef.current === false) return;
+    if (!window.speechSynthesis) return;
 
-    const utter = new SpeechSynthesisUtterance(text);
-    utter.lang = language;
-    utter.rate = 0.9;
-    utter.pitch = 1.2;
-    utter.volume = 1;
+    speakingRef.current = true;
 
-    utter.onend = () => {
-      if (speakingRef.current) {
-        window.speechSynthesis.speak(utter);
-      }
+    const speakOnce = () => {
+      if (!speakingRef.current) return;
+
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = language;
+      u.rate = 0.9;
+      u.pitch = 1.2;
+      u.volume = 1;
+
+      u.onend = () => {
+        if (speakingRef.current) {
+          setTimeout(speakOnce, 200); // tiny safe gap
+        }
+      };
+
+      window.speechSynthesis.speak(u);
     };
 
     window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(utter);
+    speakOnce();
   };
 
   // ---------------- ALARM ----------------
@@ -159,12 +177,8 @@ function MainBody() {
   const showReminder = (r) => {
     setActiveReminder(r);
     setIsRinging(true);
-
     playAlarm();
-
-    speakingRef.current = true;
-    const msg = buildVoiceMessage(r);
-    speakContinuously(msg);
+    speakContinuously(buildVoiceMessage(r));
   };
 
   // ---------------- ADD REMINDER ----------------
@@ -174,7 +188,7 @@ function MainBody() {
     let target = buildTargetTime();
     const now = DateTime.local();
 
-    // ✅ Allow current minute → next minute automatically
+    // Allow current minute → next minute
     if (target <= now) {
       target = now.plus({ minutes: 1 }).startOf("minute");
     }
@@ -189,13 +203,9 @@ function MainBody() {
       triggerAt: target.toMillis(),
     };
 
-    clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(
-      () => showReminder(reminder),
-      reminder.triggerAt - Date.now()
-    );
-
+    setTimeout(() => showReminder(reminder), reminder.triggerAt - Date.now());
     setScheduledReminders((p) => [...p, reminder]);
+
     setAddedSuccess(true);
     setTimeout(() => setAddedSuccess(false), 2000);
   };
