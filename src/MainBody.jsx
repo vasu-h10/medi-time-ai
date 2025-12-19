@@ -159,10 +159,14 @@ function MainBody() {
     if (!medicineName) return;
 
     let target = buildTargetTime();
-    if (target.toMillis() <= Date.now()) {
-      alert("Select a future time");
-      return;
-    }
+    const now = Date.now();
+const diff = target.toMillis() - now;
+
+// Allow reminders from NEXT MINUTE onwards
+if (diff < 60_000) {
+  alert("Please select a time at least 1 minute from now");
+  return;
+}
 
     target = resolveConflictTime(target);
 
