@@ -42,6 +42,7 @@ function MainBody() {
   );
 
   const timerRef = useRef(null);
+  const repeatVoiceRef = useRef(null);
   const audioRef = useRef(null);
 
   // ---------------- PERSIST ----------------
@@ -50,10 +51,7 @@ function MainBody() {
   }, [patientName]);
 
   useEffect(() => {
-    localStorage.setItem(
-      "scheduledReminders",
-      JSON.stringify(scheduledReminders)
-    );
+    localStorage.setItem("scheduledReminders", JSON.stringify(scheduledReminders));
     localStorage.setItem("history", JSON.stringify(history));
   }, [scheduledReminders, history]);
 
@@ -78,9 +76,7 @@ function MainBody() {
 
   // ---------------- CONFLICT (1 MIN GAP) ----------------
   const isMinuteConflict = (millis) =>
-    scheduledReminders.some(
-      (r) => Math.abs(r.triggerAt - millis) < 60000
-    );
+    scheduledReminders.some((r) => Math.abs(r.triggerAt - millis) < 60000);
 
   const resolveConflictTime = (dt) => {
     let candidate = dt;
@@ -90,15 +86,42 @@ function MainBody() {
     return candidate;
   };
 
-  // ---------------- VOICE ----------------
+  // ---------------- VOICE MESSAGE ----------------
+  const buildVoiceMessage = (r) => {
+    const name = patientName || "Patient";
+    const med = r.medicine;
+    const d = r.dose ? ` dose ${r.dose}` : "";
+
+    switch (true) {
+      case language.startsWith("hi"):
+        return `मिस्टर ${name}, यह ${med} लेने का समय है। कृपया तुरंत लें।`;
+      case language.startsWith("ta"):
+        return `${name}, இது ${med} மருந்து எடுத்துக்கொள்ள நேரம். தயவுசெய்து உடனே எடுத்துக்கொள்ளுங்கள்.`;
+      case language.startsWith("te"):
+        return `${name}, ఇది ${med} మందు తీసుకునే సమయం. దయచేసి వెంటనే తీసుకోండి.`;
+      case language.startsWith("kn"):
+        return `${name}, ಇದು ${med} ಔಷಧಿ ತೆಗೆದುಕೊಳ್ಳುವ ಸಮಯ. ದಯವಿಟ್ಟು ತಕ್ಷಣ ತೆಗೆದುಕೊಳ್ಳಿ.`;
+      case language.startsWith("ml"):
+        return `${name}, ഇത് ${med} മരുന്ന് കഴിക്കുന്ന സമയമാണ്. ദയവായി ഉടൻ കഴിക്കുക.`;
+      case language.startsWith("mr"):
+        return `${name}, हे ${med} घेण्याची वेळ झाली आहे. कृपया त्वरित घ्या.`;
+      case language.startsWith("bn"):
+        return `${name}, এটি ${med} নেওয়ার সময়। অনুগ্রহ করে এখনই নিন।`;
+      case language.startsWith("gu"):
+        return `${name}, આ ${med} લેવાનો સમય છે. કૃપા કરીને તરત લો.`;
+      default:
+        return `Mister ${name}, this is ${med} taking time${d}. Please take it immediately.`;
+    }
+  };
+
   const speak = (text) => {
     if (!window.speechSynthesis) return;
-    const utter = new SpeechSynthesisUtterance(text);
-    utter.lang = language;
-    utter.rate = 0.9;
-    utter.pitch = 1.2;
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = language;
+    u.rate = 0.9;
+    u.pitch = 1.2;
     window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(utter);
+    window.speechSynthesis.speak(u);
   };
 
   // ---------------- ALARM ----------------
@@ -110,26 +133,25 @@ function MainBody() {
     audioRef.current = a;
   };
 
-  const stopAlarm = () => {
+  const stopAll = () => {
     audioRef.current?.pause();
     audioRef.current = null;
+    clearInterval(repeatVoiceRef.current);
     window.speechSynthesis.cancel();
   };
 
   // ---------------- SHOW REMINDER ----------------
-  const showReminder = (reminder) => {
-    setActiveReminder(reminder);
+  const showReminder = (r) => {
+    setActiveReminder(r);
     setIsRinging(true);
     playAlarm();
 
-    const msg =
-      language.startsWith("hi")
-        ? "दवा लेने का समय हो गया है"
-        : language.startsWith("ta")
-        ? "மருந்து எடுத்துக்கொள்ள நேரம்"
-        : `Time to take ${reminder.medicine}`;
-
+    const msg = buildVoiceMessage(r);
     speak(msg);
+
+    repeatVoiceRef.current = setInterval(() => {
+      speak(msg);
+    }, 30000); // repeat every 30 sec
   };
 
   // ---------------- ADD REMINDER ----------------
@@ -165,40 +187,30 @@ function MainBody() {
 
   // ---------------- MARK AS TAKEN ----------------
   const markAsTaken = () => {
-    stopAlarm();
+    stopAll();
     setIsRinging(false);
 
     setHistory((h) => [
-      {
-        ...activeReminder,
-        takenAt: new Date().toLocaleString(),
-      },
+      { ...activeReminder, takenAt: new Date().toLocaleString() },
       ...h,
     ]);
 
     setActiveReminder(null);
   };
 
-  const deleteHistory = (id) => {
+  const deleteHistory = (id) =>
     setHistory((h) => h.filter((i) => i.id !== id));
-  };
 
   // ---------------- UI ----------------
   return (
     <main className="app">
       <h2>💊 Medicine Reminder</h2>
 
-      <input
-        placeholder="Patient name"
-        value={patientName}
-        onChange={(e) => setPatientName(e.target.value)}
-      />
+      <input placeholder="Patient name" value={patientName}
+        onChange={(e) => setPatientName(e.target.value)} />
 
-      <input
-        placeholder="Medicine name"
-        value={medicineName}
-        onChange={(e) => setMedicineName(e.target.value)}
-      />
+      <input placeholder="Medicine name" value={medicineName}
+        onChange={(e) => setMedicineName(e.target.value)} />
 
       <select value={dose} onChange={(e) => setDose(e.target.value)}>
         <option>10 mg</option>
@@ -210,20 +222,17 @@ function MainBody() {
       <label>⏰ Time</label>
       <div className="time-row">
         <select value={hour} onChange={(e) => setHour(e.target.value)}>
-          {[...Array(12)].map((_, i) => (
-            <option key={i}>{String(i + 1).padStart(2, "0")}</option>
-          ))}
+          {[...Array(12)].map((_, i) =>
+            <option key={i}>{String(i + 1).padStart(2, "0")}</option>)}
         </select>
 
         <select value={minute} onChange={(e) => setMinute(e.target.value)}>
-          {[...Array(60)].map((_, i) => (
-            <option key={i}>{String(i).padStart(2, "0")}</option>
-          ))}
+          {[...Array(60)].map((_, i) =>
+            <option key={i}>{String(i).padStart(2, "0")}</option>)}
         </select>
 
         <select value={ampm} onChange={(e) => setAmPm(e.target.value)}>
-          <option>AM</option>
-          <option>PM</option>
+          <option>AM</option><option>PM</option>
         </select>
       </div>
 
@@ -233,14 +242,16 @@ function MainBody() {
         <option value="hi-IN">Hindi</option>
         <option value="ta-IN">Tamil</option>
         <option value="te-IN">Telugu</option>
+        <option value="kn-IN">Kannada</option>
+        <option value="ml-IN">Malayalam</option>
+        <option value="mr-IN">Marathi</option>
+        <option value="bn-IN">Bengali</option>
+        <option value="gu-IN">Gujarati</option>
       </select>
 
       <label>📅 Date</label>
-      <input
-        type="date"
-        value={reminderDate}
-        onChange={(e) => setReminderDate(e.target.value)}
-      />
+      <input type="date" value={reminderDate}
+        onChange={(e) => setReminderDate(e.target.value)} />
 
       <input type="file" accept="image/*" onChange={onImagePick} />
 
@@ -248,70 +259,38 @@ function MainBody() {
         {addedSuccess ? "✅ Reminder Added" : "➕ Add Reminder"}
       </button>
 
-      {/* 🔔 ACTIVE REMINDER */}
       {isRinging && activeReminder && (
         <div className="active-reminder">
-          {activeReminder.image ? (
-            <img
-              src={activeReminder.image}
-              alt="Medicine"
-              className="reminder-image"
-            />
-          ) : (
-            <div className="image-placeholder">⬜</div>
-          )}
-
+          {activeReminder.image
+            ? <img src={activeReminder.image} className="reminder-image" />
+            : <div className="image-placeholder">⬜</div>}
           <p><b>{activeReminder.medicine}</b></p>
           <p>Dose: {activeReminder.dose}</p>
-
           <button onClick={markAsTaken} className="confirm-btn">
             ✅ Mark as Taken
           </button>
         </div>
       )}
 
-      {/* 📜 HISTORY TOGGLE */}
       <hr />
       <button onClick={() => setShowHistory(!showHistory)}>
         {showHistory ? "🙈 Hide History" : "👁 Show History"}
       </button>
 
-      {showHistory && (
-        <>
-          {history.length === 0 && (
-            <p style={{ textAlign: "center", opacity: 0.6 }}>
-              No history yet
-            </p>
-          )}
-
-          {history.map((h) => (
-            <div key={h.id} className="history-item">
-              {h.image ? (
-                <img src={h.image} alt="Medicine" />
-              ) : (
-                <div className="image-placeholder small">⬜</div>
-              )}
-              <div className="history-content">
-                <strong>{h.medicine}</strong>
-                <div className="taken-time">{h.takenAt}</div>
-              </div>
-              <button
-                className="delete-btn"
-                onClick={() => deleteHistory(h.id)}
-              >
-                ❌
-              </button>
-            </div>
-          ))}
-        </>
-      )}
-
-      {/* 📢 AD (HIDDEN WHILE RINGING) */}
-      {!isRinging && (
-        <div className="ad-box">
-          <small>Advertisement</small>
+      {showHistory && history.map((h) => (
+        <div key={h.id} className="history-item">
+          {h.image
+            ? <img src={h.image} />
+            : <div className="image-placeholder small">⬜</div>}
+          <div className="history-content">
+            <strong>{h.medicine}</strong>
+            <div className="taken-time">{h.takenAt}</div>
+          </div>
+          <button className="delete-btn" onClick={() => deleteHistory(h.id)}>❌</button>
         </div>
-      )}
+      ))}
+
+      {!isRinging && <div className="ad-box"><small>Advertisement</small></div>}
     </main>
   );
 }
