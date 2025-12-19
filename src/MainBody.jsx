@@ -51,7 +51,10 @@ function MainBody() {
   }, [patientName]);
 
   useEffect(() => {
-    localStorage.setItem("scheduledReminders", JSON.stringify(scheduledReminders));
+    localStorage.setItem(
+      "scheduledReminders",
+      JSON.stringify(scheduledReminders)
+    );
     localStorage.setItem("history", JSON.stringify(history));
   }, [scheduledReminders, history]);
 
@@ -76,7 +79,9 @@ function MainBody() {
 
   // ---------------- CONFLICT (1 MIN GAP) ----------------
   const isMinuteConflict = (millis) =>
-    scheduledReminders.some((r) => Math.abs(r.triggerAt - millis) < 60000);
+    scheduledReminders.some(
+      (r) => Math.abs(r.triggerAt - millis) < 60000
+    );
 
   const resolveConflictTime = (dt) => {
     let candidate = dt;
@@ -90,27 +95,27 @@ function MainBody() {
   const buildVoiceMessage = (r) => {
     const name = patientName || "Patient";
     const med = r.medicine;
-    const d = r.dose ? ` dose ${r.dose}` : "";
+    const d = r.dose ? ` ${r.dose}` : "";
 
     switch (true) {
       case language.startsWith("hi"):
-        return `मिस्टर ${name}, यह ${med} लेने का समय है। कृपया तुरंत लें।`;
+        return `मिस्टर ${name}, यह ${med}${d} लेने का समय है। कृपया तुरंत लें।`;
       case language.startsWith("ta"):
-        return `${name}, இது ${med} மருந்து எடுத்துக்கொள்ள நேரம். தயவுசெய்து உடனே எடுத்துக்கொள்ளுங்கள்.`;
+        return `${name}, இது ${med}${d} மருந்து எடுத்துக்கொள்ள நேரம். தயவுசெய்து உடனே எடுத்துக்கொள்ளுங்கள்.`;
       case language.startsWith("te"):
-        return `${name}, ఇది ${med} మందు తీసుకునే సమయం. దయచేసి వెంటనే తీసుకోండి.`;
+        return `${name}, ఇది ${med}${d} మందు తీసుకునే సమయం. దయచేసి వెంటనే తీసుకోండి.`;
       case language.startsWith("kn"):
-        return `${name}, ಇದು ${med} ಔಷಧಿ ತೆಗೆದುಕೊಳ್ಳುವ ಸಮಯ. ದಯವಿಟ್ಟು ತಕ್ಷಣ ತೆಗೆದುಕೊಳ್ಳಿ.`;
+        return `${name}, ಇದು ${med}${d} ಔಷಧಿ ತೆಗೆದುಕೊಳ್ಳುವ ಸಮಯ. ದಯವಿಟ್ಟು ತಕ್ಷಣ ತೆಗೆದುಕೊಳ್ಳಿ.`;
       case language.startsWith("ml"):
-        return `${name}, ഇത് ${med} മരുന്ന് കഴിക്കുന്ന സമയമാണ്. ദയവായി ഉടൻ കഴിക്കുക.`;
+        return `${name}, ഇത് ${med}${d} മരുന്ന് കഴിക്കുന്ന സമയമാണ്. ദയവായി ഉടൻ കഴിക്കുക.`;
       case language.startsWith("mr"):
-        return `${name}, हे ${med} घेण्याची वेळ झाली आहे. कृपया त्वरित घ्या.`;
+        return `${name}, हे ${med}${d} घेण्याची वेळ झाली आहे. कृपया त्वरित घ्या.`;
       case language.startsWith("bn"):
-        return `${name}, এটি ${med} নেওয়ার সময়। অনুগ্রহ করে এখনই নিন।`;
+        return `${name}, এটি ${med}${d} নেওয়ার সময়। অনুগ্রহ করে এখনই নিন।`;
       case language.startsWith("gu"):
-        return `${name}, આ ${med} લેવાનો સમય છે. કૃપા કરીને તરત લો.`;
+        return `${name}, આ ${med}${d} લેવાનો સમય છે. કૃપા કરીને તરત લો.`;
       default:
-        return `Mister ${name}, this is ${med} taking time${d}. Please take it immediately.`;
+        return `Mister ${name}, this is ${med}${d} taking time. Please take it immediately.`;
     }
   };
 
@@ -151,7 +156,7 @@ function MainBody() {
 
     repeatVoiceRef.current = setInterval(() => {
       speak(msg);
-    }, 30000); // repeat every 30 sec
+    }, 30000);
   };
 
   // ---------------- ADD REMINDER ----------------
@@ -159,14 +164,12 @@ function MainBody() {
     if (!medicineName) return;
 
     let target = buildTargetTime();
-    const now = Date.now();
-const diff = target.toMillis() - now;
+    const diff = target.toMillis() - Date.now();
 
-// Allow reminders from NEXT MINUTE onwards
-if (diff < 60_000) {
-  alert("Please select a time at least 1 minute from now");
-  return;
-}
+    if (diff < 60000) {
+      alert("Please select a time at least 1 minute from now");
+      return;
+    }
 
     target = resolveConflictTime(target);
 
@@ -202,19 +205,26 @@ if (diff < 60_000) {
     setActiveReminder(null);
   };
 
-  const deleteHistory = (id) =>
+  const deleteHistory = (id) => {
     setHistory((h) => h.filter((i) => i.id !== id));
+  };
 
   // ---------------- UI ----------------
   return (
     <main className="app">
       <h2>💊 Medicine Reminder</h2>
 
-      <input placeholder="Patient name" value={patientName}
-        onChange={(e) => setPatientName(e.target.value)} />
+      <input
+        placeholder="Patient name"
+        value={patientName}
+        onChange={(e) => setPatientName(e.target.value)}
+      />
 
-      <input placeholder="Medicine name" value={medicineName}
-        onChange={(e) => setMedicineName(e.target.value)} />
+      <input
+        placeholder="Medicine name"
+        value={medicineName}
+        onChange={(e) => setMedicineName(e.target.value)}
+      />
 
       <select value={dose} onChange={(e) => setDose(e.target.value)}>
         <option>10 mg</option>
@@ -226,17 +236,20 @@ if (diff < 60_000) {
       <label>⏰ Time</label>
       <div className="time-row">
         <select value={hour} onChange={(e) => setHour(e.target.value)}>
-          {[...Array(12)].map((_, i) =>
-            <option key={i}>{String(i + 1).padStart(2, "0")}</option>)}
+          {[...Array(12)].map((_, i) => (
+            <option key={i}>{String(i + 1).padStart(2, "0")}</option>
+          ))}
         </select>
 
         <select value={minute} onChange={(e) => setMinute(e.target.value)}>
-          {[...Array(60)].map((_, i) =>
-            <option key={i}>{String(i).padStart(2, "0")}</option>)}
+          {[...Array(60)].map((_, i) => (
+            <option key={i}>{String(i).padStart(2, "0")}</option>
+          ))}
         </select>
 
         <select value={ampm} onChange={(e) => setAmPm(e.target.value)}>
-          <option>AM</option><option>PM</option>
+          <option>AM</option>
+          <option>PM</option>
         </select>
       </div>
 
@@ -254,8 +267,11 @@ if (diff < 60_000) {
       </select>
 
       <label>📅 Date</label>
-      <input type="date" value={reminderDate}
-        onChange={(e) => setReminderDate(e.target.value)} />
+      <input
+        type="date"
+        value={reminderDate}
+        onChange={(e) => setReminderDate(e.target.value)}
+      />
 
       <input type="file" accept="image/*" onChange={onImagePick} />
 
@@ -265,9 +281,11 @@ if (diff < 60_000) {
 
       {isRinging && activeReminder && (
         <div className="active-reminder">
-          {activeReminder.image
-            ? <img src={activeReminder.image} className="reminder-image" />
-            : <div className="image-placeholder">⬜</div>}
+          {activeReminder.image ? (
+            <img src={activeReminder.image} className="reminder-image" />
+          ) : (
+            <div className="image-placeholder">⬜</div>
+          )}
           <p><b>{activeReminder.medicine}</b></p>
           <p>Dose: {activeReminder.dose}</p>
           <button onClick={markAsTaken} className="confirm-btn">
@@ -281,20 +299,32 @@ if (diff < 60_000) {
         {showHistory ? "🙈 Hide History" : "👁 Show History"}
       </button>
 
-      {showHistory && history.map((h) => (
-        <div key={h.id} className="history-item">
-          {h.image
-            ? <img src={h.image} />
-            : <div className="image-placeholder small">⬜</div>}
-          <div className="history-content">
-            <strong>{h.medicine}</strong>
-            <div className="taken-time">{h.takenAt}</div>
+      {showHistory &&
+        history.map((h) => (
+          <div key={h.id} className="history-item">
+            {h.image ? (
+              <img src={h.image} />
+            ) : (
+              <div className="image-placeholder small">⬜</div>
+            )}
+            <div className="history-content">
+              <strong>{h.medicine}</strong>
+              <div className="taken-time">{h.takenAt}</div>
+            </div>
+            <button
+              className="delete-btn"
+              onClick={() => deleteHistory(h.id)}
+            >
+              ❌
+            </button>
           </div>
-          <button className="delete-btn" onClick={() => deleteHistory(h.id)}>❌</button>
-        </div>
-      ))}
+        ))}
 
-      {!isRinging && <div className="ad-box"><small>Advertisement</small></div>}
+      {!isRinging && (
+        <div className="ad-box">
+          <small>Advertisement</small>
+        </div>
+      )}
     </main>
   );
 }
