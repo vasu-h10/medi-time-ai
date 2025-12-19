@@ -1,8 +1,7 @@
 {
-  "id": "/",
-  "name": "Medi-Time AI",
+  "name": "Medi-Time",
   "short_name": "Medi-Time",
-  "description": "Medi-Time AI helps users manage medicine reminders with alerts, voice reminders, and a simple, easy-to-use interface.",
+  "description": "Medi-Time helps users manage medicine schedules with simple reminders and an easy-to-use interface while the app is active.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
