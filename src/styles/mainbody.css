@@ -1,4 +1,6 @@
-/* App container */
+/* ===============================
+   App container
+================================ */
 .app {
   padding: 20px;
   max-width: 420px;
@@ -6,7 +8,9 @@
   font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
-/* Labels */
+/* ===============================
+   Labels
+================================ */
 label {
   display: block;
   margin-top: 12px;
@@ -15,7 +19,9 @@ label {
   color: #374151;
 }
 
-/* Inputs & selects */
+/* ===============================
+   Inputs & selects
+================================ */
 input,
 select {
   width: 100%;
@@ -33,13 +39,17 @@ select:focus {
   border-color: #2563eb;
 }
 
-/* Time picker row (NEW – replaces inline style) */
+/* ===============================
+   Time picker row
+================================ */
 .time-row {
   display: flex;
   gap: 8px;
 }
 
-/* Primary button */
+/* ===============================
+   Buttons
+================================ */
 .primary-btn {
   width: 100%;
   padding: 14px;
@@ -52,7 +62,10 @@ select:focus {
   cursor: pointer;
 }
 
-/* Confirm / taken button */
+.primary-btn:active {
+  transform: scale(0.98);
+}
+
 .confirm-btn {
   width: 100%;
   padding: 14px;
@@ -64,7 +77,9 @@ select:focus {
   cursor: pointer;
 }
 
-/* Active reminder */
+/* ===============================
+   Active reminder card
+================================ */
 .active-reminder {
   margin-top: 20px;
   padding: 16px;
@@ -75,15 +90,39 @@ select:focus {
   animation: pulse 1.2s infinite;
 }
 
-/* Medicine image */
+/* ===============================
+   Medicine image
+================================ */
 .reminder-image {
   width: 140px;
+  height: 140px;
+  object-fit: cover;
   border-radius: 10px;
-  margin: 12px 0;
+  margin: 12px auto;
 }
 
-/* History */
+/* Placeholder when no image */
+.image-placeholder {
+  width: 140px;
+  height: 140px;
+  border-radius: 10px;
+  margin: 12px auto;
+  background: #f3f4f6;
+  border: 2px dashed #cbd5e1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  font-size: 32px;
+}
+
+/* ===============================
+   History section
+================================ */
 .history-item {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   padding: 10px;
@@ -92,26 +131,58 @@ select:focus {
 }
 
 .history-item img {
-  width: 70px;
+  width: 60px;
+  height: 60px;
   border-radius: 6px;
-  margin-top: 6px;
+  object-fit: cover;
 }
 
-/* Taken timestamp */
+.history-content {
+  flex: 1;
+}
+
 .taken-time {
   font-size: 12px;
   color: #16a34a;
   margin-top: 4px;
 }
 
-/* Divider */
+/* Delete history button */
+.delete-btn {
+  background: transparent;
+  border: none;
+  color: #ef4444;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+/* ===============================
+   Advertisement container
+   (Hidden when reminder is active)
+================================ */
+.ad-container {
+  margin-top: 20px;
+  padding: 12px;
+  border-radius: 10px;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  text-align: center;
+  font-size: 14px;
+  color: #64748b;
+}
+
+/* ===============================
+   Divider
+================================ */
 hr {
   margin: 24px 0;
   border: none;
   border-top: 1px solid #e5e7eb;
 }
 
-/* Pulse animation */
+/* ===============================
+   Pulse animation
+================================ */
 @keyframes pulse {
   0% {
     box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.7);
