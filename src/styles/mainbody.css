@@ -78,16 +78,16 @@ select:focus {
 }
 
 /* ===============================
-   Active reminder card
+   Active reminder (RINGING)
 ================================ */
 .active-reminder {
   margin-top: 20px;
   padding: 16px;
-  border-radius: 12px;
-  background: #ecfeff;
-  border: 2px solid #67e8f9;
+  border-radius: 14px;
+  background: #fff7ed;
+  border: 3px solid #fb923c;
   text-align: center;
-  animation: pulse 1.2s infinite;
+  animation: pulse 1.1s infinite;
 }
 
 /* ===============================
@@ -97,16 +97,15 @@ select:focus {
   width: 140px;
   height: 140px;
   object-fit: cover;
-  border-radius: 10px;
+  border-radius: 12px;
   margin: 12px auto;
-  display: block;
 }
 
 /* Placeholder when no image */
 .image-placeholder {
   width: 140px;
   height: 140px;
-  border-radius: 10px;
+  border-radius: 12px;
   margin: 12px auto;
   background: #f3f4f6;
   border: 2px dashed #cbd5e1;
@@ -122,7 +121,6 @@ select:focus {
   width: 60px;
   height: 60px;
   font-size: 18px;
-  margin: 0;
 }
 
 /* ===============================
@@ -131,9 +129,9 @@ select:focus {
 .history-item {
   display: flex;
   gap: 10px;
-  align-items: center;
+  align-items: flex-start;
   border: 1px solid #e5e7eb;
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 10px;
   margin-top: 10px;
   background: #fff;
@@ -142,7 +140,7 @@ select:focus {
 .history-item img {
   width: 60px;
   height: 60px;
-  border-radius: 6px;
+  border-radius: 8px;
   object-fit: cover;
 }
 
@@ -170,15 +168,13 @@ select:focus {
 ================================ */
 .ad-box {
   margin-top: 20px;
-  padding: 12px;
-  border-radius: 10px;
+  padding: 14px;
+  border-radius: 12px;
   background: #f8fafc;
   border: 1px dashed #cbd5e1;
   text-align: center;
   font-size: 14px;
   color: #64748b;
-  width: 100%;        /* ✅ fixed width */
-  box-sizing: border-box;
 }
 
 /* ===============================
@@ -191,16 +187,16 @@ hr {
 }
 
 /* ===============================
-   Pulse animation
+   Pulse animation (ringing alert)
 ================================ */
 @keyframes pulse {
   0% {
-    box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.7);
+    box-shadow: 0 0 0 0 rgba(251, 146, 60, 0.6);
   }
   70% {
-    box-shadow: 0 0 0 12px rgba(6, 182, 212, 0);
+    box-shadow: 0 0 0 14px rgba(251, 146, 60, 0);
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(6, 182, 212, 0);
+    box-shadow: 0 0 0 0 rgba(251, 146, 60, 0);
   }
 }
