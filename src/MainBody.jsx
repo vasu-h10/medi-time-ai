@@ -31,12 +31,12 @@ function MainBody() {
   const [isRinging, setIsRinging] = useState(false);
   const [activeReminder, setActiveReminder] = useState(null);
   const [addedSuccess, setAddedSuccess] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
 
   // ---------------- STORAGE ----------------
   const [scheduledReminders, setScheduledReminders] = useState(
     JSON.parse(localStorage.getItem("scheduledReminders") || "[]")
   );
-
   const [history, setHistory] = useState(
     JSON.parse(localStorage.getItem("history") || "[]")
   );
@@ -44,6 +44,7 @@ function MainBody() {
   const timerRef = useRef(null);
   const audioRef = useRef(null);
 
+  // ---------------- PERSIST ----------------
   useEffect(() => {
     localStorage.setItem("patientName", patientName);
   }, [patientName]);
@@ -250,17 +251,15 @@ function MainBody() {
       {/* 🔔 ACTIVE REMINDER */}
       {isRinging && activeReminder && (
         <div className="active-reminder">
-          <div className="image-box">
-            {activeReminder.image ? (
-              <img
-                src={activeReminder.image}
-                alt="Medicine"
-                className="reminder-image"
-              />
-            ) : (
-              <div className="image-placeholder">⬜</div>
-            )}
-          </div>
+          {activeReminder.image ? (
+            <img
+              src={activeReminder.image}
+              alt="Medicine"
+              className="reminder-image"
+            />
+          ) : (
+            <div className="image-placeholder">⬜</div>
+          )}
 
           <p><b>{activeReminder.medicine}</b></p>
           <p>Dose: {activeReminder.dose}</p>
@@ -271,29 +270,45 @@ function MainBody() {
         </div>
       )}
 
-      {/* 📜 HISTORY */}
-      <h3>📜 History</h3>
-      {history.map((h) => (
-        <div key={h.id} className="history-item">
-          <div className="history-row">
-            {h.image ? (
-              <img src={h.image} alt="Medicine" />
-            ) : (
-              <div className="image-placeholder small">⬜</div>
-            )}
-            <div>
-              <strong>{h.medicine}</strong>
-              <div className="taken-time">{h.takenAt}</div>
+      {/* 📜 HISTORY TOGGLE */}
+      <hr />
+      <button onClick={() => setShowHistory(!showHistory)}>
+        {showHistory ? "🙈 Hide History" : "👁 Show History"}
+      </button>
+
+      {showHistory && (
+        <>
+          {history.length === 0 && (
+            <p style={{ textAlign: "center", opacity: 0.6 }}>
+              No history yet
+            </p>
+          )}
+
+          {history.map((h) => (
+            <div key={h.id} className="history-item">
+              {h.image ? (
+                <img src={h.image} alt="Medicine" />
+              ) : (
+                <div className="image-placeholder small">⬜</div>
+              )}
+              <div className="history-content">
+                <strong>{h.medicine}</strong>
+                <div className="taken-time">{h.takenAt}</div>
+              </div>
+              <button
+                className="delete-btn"
+                onClick={() => deleteHistory(h.id)}
+              >
+                ❌
+              </button>
             </div>
-            <button onClick={() => deleteHistory(h.id)}>❌</button>
-          </div>
-        </div>
-      ))}
+          ))}
+        </>
+      )}
 
       {/* 📢 AD (HIDDEN WHILE RINGING) */}
       {!isRinging && (
         <div className="ad-box">
-          {/* Ad network placeholder */}
           <small>Advertisement</small>
         </div>
       )}
