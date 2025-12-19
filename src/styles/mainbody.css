@@ -116,6 +116,13 @@ select:focus {
   font-size: 32px;
 }
 
+/* Smaller placeholder for history */
+.image-placeholder.small {
+  width: 60px;
+  height: 60px;
+  font-size: 18px;
+}
+
 /* ===============================
    History section
 ================================ */
@@ -157,10 +164,9 @@ select:focus {
 }
 
 /* ===============================
-   Advertisement container
-   (Hidden when reminder is active)
+   Advertisement (hidden while ringing)
 ================================ */
-.ad-container {
+.ad-box {
   margin-top: 20px;
   padding: 12px;
   border-radius: 10px;
