@@ -5,7 +5,7 @@ import "./styles/mainbody.css";
 /*
   SAFE APP MODE
   - Works only when app is active / background
-  - No killed-app notifications
+  - Continuous alarm + voice until taken
   - Ads hidden during ringing
 */
 
@@ -42,8 +42,8 @@ function MainBody() {
   );
 
   const timerRef = useRef(null);
-  const repeatVoiceRef = useRef(null);
   const audioRef = useRef(null);
+  const speakingRef = useRef(false);
 
   // ---------------- PERSIST ----------------
   useEffect(() => {
@@ -119,14 +119,24 @@ function MainBody() {
     }
   };
 
-  const speak = (text) => {
-    if (!window.speechSynthesis) return;
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = language;
-    u.rate = 0.9;
-    u.pitch = 1.2;
+  // ---------------- CONTINUOUS VOICE (NO GAP) ----------------
+  const speakContinuously = (text) => {
+    if (!window.speechSynthesis || speakingRef.current === false) return;
+
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.lang = language;
+    utter.rate = 0.9;
+    utter.pitch = 1.2;
+    utter.volume = 1;
+
+    utter.onend = () => {
+      if (speakingRef.current) {
+        window.speechSynthesis.speak(utter);
+      }
+    };
+
     window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(u);
+    window.speechSynthesis.speak(utter);
   };
 
   // ---------------- ALARM ----------------
@@ -139,9 +149,9 @@ function MainBody() {
   };
 
   const stopAll = () => {
+    speakingRef.current = false;
     audioRef.current?.pause();
     audioRef.current = null;
-    clearInterval(repeatVoiceRef.current);
     window.speechSynthesis.cancel();
   };
 
@@ -149,49 +159,47 @@ function MainBody() {
   const showReminder = (r) => {
     setActiveReminder(r);
     setIsRinging(true);
+
     playAlarm();
 
+    speakingRef.current = true;
     const msg = buildVoiceMessage(r);
-    speak(msg);
-
-    repeatVoiceRef.current = setInterval(() => {
-      speak(msg);
-    }, 30000);
+    speakContinuously(msg);
   };
 
   // ---------------- ADD REMINDER ----------------
   const triggerReminder = () => {
-  if (!medicineName) return;
+    if (!medicineName) return;
 
-  let target = buildTargetTime();
-  const now = DateTime.local();
+    let target = buildTargetTime();
+    const now = DateTime.local();
 
-  // ✅ Auto-fix: allow current minute → next minute
-  if (target <= now) {
-    target = now.plus({ minutes: 1 }).startOf("minute");
-  }
+    // ✅ Allow current minute → next minute automatically
+    if (target <= now) {
+      target = now.plus({ minutes: 1 }).startOf("minute");
+    }
 
-  // ✅ Resolve 1-minute conflicts with other reminders
-  target = resolveConflictTime(target);
+    target = resolveConflictTime(target);
 
-  const reminder = {
-    id: Date.now(),
-    medicine: medicineName,
-    dose,
-    image: medicineImage,
-    triggerAt: target.toMillis(),
+    const reminder = {
+      id: Date.now(),
+      medicine: medicineName,
+      dose,
+      image: medicineImage,
+      triggerAt: target.toMillis(),
+    };
+
+    clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(
+      () => showReminder(reminder),
+      reminder.triggerAt - Date.now()
+    );
+
+    setScheduledReminders((p) => [...p, reminder]);
+    setAddedSuccess(true);
+    setTimeout(() => setAddedSuccess(false), 2000);
   };
 
-  clearTimeout(timerRef.current);
-  timerRef.current = setTimeout(
-    () => showReminder(reminder),
-    reminder.triggerAt - Date.now()
-  );
-
-  setScheduledReminders((p) => [...p, reminder]);
-  setAddedSuccess(true);
-  setTimeout(() => setAddedSuccess(false), 2000);
-};
   // ---------------- MARK AS TAKEN ----------------
   const markAsTaken = () => {
     stopAll();
