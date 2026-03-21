@@ -1,5 +1,6 @@
 {
   "appId": "com.meditime.app",
   "appName": "MediTime",
-  "webDir": "dist"
+  "webDir": "dist",
+  "bundledWebRuntime": false
 }
