@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">MediTime</string>
+    <string name="title_activity_main">MediTime</string>
+    <string name="package_name">com.vasu.meditime</string>
+    <string name="custom_url_scheme">com.vasu.meditime</string>
+</resources>
