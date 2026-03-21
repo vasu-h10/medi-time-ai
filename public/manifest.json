@@ -1,7 +1,8 @@
 {
   "name": "Medi-Time",
   "short_name": "Medi-Time",
-  "description": "Medi-Time helps users manage medicine schedules with simple reminders and an easy-to-use interface while the app is active.",
+  "id": "/",
+  "description": "Medi-Time helps users manage medicine schedules with simple reminders and an easy-to-use interface.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -12,12 +13,14 @@
     {
       "src": "/icons/icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "/icons/icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "/icons/icon-maskable-512.png",
