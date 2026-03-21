@@ -18,12 +18,24 @@ self.addEventListener("install", (event) => {
   self.skipWaiting();
 });
 
-// Activate
+// ✅ Activate (REPLACE THIS PART)
 self.addEventListener("activate", (event) => {
   console.log("Service Worker activated");
+
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cache) => {
+          if (cache !== CACHE_NAME) {
+            return caches.delete(cache);
+          }
+        })
+      );
+    })
+  );
 });
 
-// Fetch (offline support)
+// Fetch
 self.addEventListener("fetch", (event) => {
   event.respondWith(
     caches.match(event.request).then((response) => {
