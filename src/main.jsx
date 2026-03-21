@@ -10,13 +10,13 @@ ReactDOM.createRoot(document.getElementById("root")).render(
   </React.StrictMode>
 );
 
-// ✅ Firebase Messaging Service Worker (PWA + Notifications)
+// ✅ Register Service Worker (PWA) — ONLY ONCE
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker
-      .register("/firebase-messaging-sw.js")
+      .register("/sw.js")
       .then(() => {
-        console.log("Firebase Messaging Service Worker registered");
+        console.log("Service Worker registered");
       })
       .catch((err) => {
         console.error("Service Worker registration failed:", err);
