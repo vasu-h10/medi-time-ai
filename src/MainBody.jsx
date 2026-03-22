@@ -2,13 +2,6 @@ import React, { useEffect, useState, useRef } from "react";
 import { DateTime } from "luxon";
 import "./styles/mainbody.css";
 
-/*
-  SAFE APP MODE
-  - Works only when app is active / background
-  - Continuous alarm + voice until taken
-  - Ads hidden during ringing
-*/
-
 function MainBody() {
   // ---------------- BASIC ----------------
   const [patientName, setPatientName] = useState(
@@ -27,7 +20,7 @@ function MainBody() {
   );
 
   // ---------------- UI ----------------
-  const [language, setLanguage] = useState("en-IN");
+  const [language, setLanguage] = useState("te-IN"); // Telugu default 😉
   const [isRinging, setIsRinging] = useState(false);
   const [activeReminder, setActiveReminder] = useState(null);
   const [addedSuccess, setAddedSuccess] = useState(false);
@@ -57,7 +50,7 @@ function MainBody() {
     localStorage.setItem("history", JSON.stringify(history));
   }, [scheduledReminders, history]);
 
-  // ---------------- RESTORE REMINDERS (CRITICAL) ----------------
+  // ---------------- RESTORE ----------------
   useEffect(() => {
     scheduledReminders.forEach((r) => {
       const delay = r.triggerAt - Date.now();
@@ -65,10 +58,9 @@ function MainBody() {
         setTimeout(() => showReminder(r), delay);
       }
     });
-    // eslint-disable-next-line
   }, []);
 
-  // ---------------- IMAGE PICK ----------------
+  // ---------------- IMAGE ----------------
   const onImagePick = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -87,7 +79,6 @@ function MainBody() {
     return DateTime.fromISO(iso);
   };
 
-  // ---------------- CONFLICT (1 MIN GAP) ----------------
   const isMinuteConflict = (millis) =>
     scheduledReminders.some(
       (r) => Math.abs(r.triggerAt - millis) < 60000
@@ -101,35 +92,12 @@ function MainBody() {
     return candidate;
   };
 
-  // ---------------- VOICE MESSAGE ----------------
+  // ---------------- VOICE ----------------
   const buildVoiceMessage = (r) => {
     const name = patientName || "Patient";
-    const med = r.medicine;
-    const d = r.dose ? ` ${r.dose}` : "";
-
-    switch (true) {
-      case language.startsWith("hi"):
-        return `मिस्टर ${name}, यह ${med}${d} लेने का समय है। कृपया तुरंत लें।`;
-      case language.startsWith("ta"):
-        return `${name}, இது ${med}${d} மருந்து எடுத்துக்கொள்ள நேரம். தயவுசெய்து உடனே எடுத்துக்கொள்ளுங்கள்.`;
-      case language.startsWith("te"):
-        return `${name}, ఇది ${med}${d} మందు తీసుకునే సమయం. దయచేసి వెంటనే తీసుకోండి.`;
-      case language.startsWith("kn"):
-        return `${name}, ಇದು ${med}${d} ಔಷಧಿ ತೆಗೆದುಕೊಳ್ಳುವ ಸಮಯ. ದಯವಿಟ್ಟು ತಕ್ಷಣ ತೆಗೆದುಕೊಳ್ಳಿ.`;
-      case language.startsWith("ml"):
-        return `${name}, ഇത് ${med}${d} മരുന്ന് കഴിക്കുന്ന സമയമാണ്. ദയവായി ഉടൻ കഴിക്കുക.`;
-      case language.startsWith("mr"):
-        return `${name}, हे ${med}${d} घेण्याची वेळ झाली आहे. कृपया त्वरित घ्या.`;
-      case language.startsWith("bn"):
-        return `${name}, এটি ${med}${d} নেওয়ার সময়। অনুগ্রহ করে এখনই নিন।`;
-      case language.startsWith("gu"):
-        return `${name}, આ ${med}${d} લેવાનો સમય છે. કૃપા કરીને તરત લો.`;
-      default:
-        return `Mister ${name}, this is ${med}${d} taking time. Please take it immediately.`;
-    }
+    return `${name}, ${r.medicine} ${r.dose} తీసుకునే సమయం వచ్చింది. వెంటనే తీసుకోండి.`;
   };
 
-  // ---------------- CONTINUOUS VOICE (STABLE) ----------------
   const speakContinuously = (text) => {
     if (!window.speechSynthesis) return;
 
@@ -140,14 +108,9 @@ function MainBody() {
 
       const u = new SpeechSynthesisUtterance(text);
       u.lang = language;
-      u.rate = 0.9;
-      u.pitch = 1.2;
-      u.volume = 1;
 
       u.onend = () => {
-        if (speakingRef.current) {
-          setTimeout(speakOnce, 200); // tiny safe gap
-        }
+        if (speakingRef.current) setTimeout(speakOnce, 200);
       };
 
       window.speechSynthesis.speak(u);
@@ -161,7 +124,6 @@ function MainBody() {
   const playAlarm = () => {
     const a = new Audio("/alarm.mp3");
     a.loop = true;
-    a.volume = 1;
     a.play().catch(() => {});
     audioRef.current = a;
   };
@@ -169,11 +131,10 @@ function MainBody() {
   const stopAll = () => {
     speakingRef.current = false;
     audioRef.current?.pause();
-    audioRef.current = null;
     window.speechSynthesis.cancel();
   };
 
-  // ---------------- SHOW REMINDER ----------------
+  // ---------------- SHOW ----------------
   const showReminder = (r) => {
     setActiveReminder(r);
     setIsRinging(true);
@@ -181,14 +142,13 @@ function MainBody() {
     speakContinuously(buildVoiceMessage(r));
   };
 
-  // ---------------- ADD REMINDER ----------------
+  // ---------------- ADD ----------------
   const triggerReminder = () => {
     if (!medicineName) return;
 
     let target = buildTargetTime();
     const now = DateTime.local();
 
-    // Allow current minute → next minute
     if (target <= now) {
       target = now.plus({ minutes: 1 }).startOf("minute");
     }
@@ -210,7 +170,7 @@ function MainBody() {
     setTimeout(() => setAddedSuccess(false), 2000);
   };
 
-  // ---------------- MARK AS TAKEN ----------------
+  // ---------------- TAKEN ----------------
   const markAsTaken = () => {
     stopAll();
     setIsRinging(false);
@@ -230,119 +190,99 @@ function MainBody() {
   // ---------------- UI ----------------
   return (
     <main className="app">
-      <h2>💊 Medicine Reminder</h2>
 
+      {/* HEADER */}
+      <h1 className="title">💊 MediTime</h1>
+
+      {/* PATIENT */}
       <input
-        placeholder="Patient name"
+        className="input"
+        placeholder="👤 Patient Name"
         value={patientName}
         onChange={(e) => setPatientName(e.target.value)}
       />
 
+      {/* MEDICINE */}
       <input
-        placeholder="Medicine name"
+        className="input"
+        placeholder="💊 Medicine Name"
         value={medicineName}
         onChange={(e) => setMedicineName(e.target.value)}
       />
 
-      <select value={dose} onChange={(e) => setDose(e.target.value)}>
+      <select className="input" value={dose} onChange={(e) => setDose(e.target.value)}>
         <option>10 mg</option>
         <option>20 mg</option>
         <option>50 mg</option>
         <option>100 mg</option>
       </select>
 
-      <label>⏰ Time</label>
-      <div className="time-row">
-        <select value={hour} onChange={(e) => setHour(e.target.value)}>
-          {[...Array(12)].map((_, i) => (
-            <option key={i}>{String(i + 1).padStart(2, "0")}</option>
-          ))}
-        </select>
+      {/* TIME */}
+      <div className="card">
+        <label>⏰ Time</label>
+        <div className="time-row">
+          <select value={hour} onChange={(e) => setHour(e.target.value)}>
+            {[...Array(12)].map((_, i) => (
+              <option key={i}>{String(i + 1).padStart(2, "0")}</option>
+            ))}
+          </select>
 
-        <select value={minute} onChange={(e) => setMinute(e.target.value)}>
-          {[...Array(60)].map((_, i) => (
-            <option key={i}>{String(i).padStart(2, "0")}</option>
-          ))}
-        </select>
+          <select value={minute} onChange={(e) => setMinute(e.target.value)}>
+            {[...Array(60)].map((_, i) => (
+              <option key={i}>{String(i).padStart(2, "0")}</option>
+            ))}
+          </select>
 
-        <select value={ampm} onChange={(e) => setAmPm(e.target.value)}>
-          <option>AM</option>
-          <option>PM</option>
-        </select>
+          <select value={ampm} onChange={(e) => setAmPm(e.target.value)}>
+            <option>AM</option>
+            <option>PM</option>
+          </select>
+        </div>
       </div>
 
-      <label>🗣 Voice</label>
-      <select value={language} onChange={(e) => setLanguage(e.target.value)}>
-        <option value="en-IN">English</option>
-        <option value="hi-IN">Hindi</option>
-        <option value="ta-IN">Tamil</option>
-        <option value="te-IN">Telugu</option>
-        <option value="kn-IN">Kannada</option>
-        <option value="ml-IN">Malayalam</option>
-        <option value="mr-IN">Marathi</option>
-        <option value="bn-IN">Bengali</option>
-        <option value="gu-IN">Gujarati</option>
-      </select>
-
-      <label>📅 Date</label>
+      {/* DATE */}
       <input
+        className="input"
         type="date"
         value={reminderDate}
         onChange={(e) => setReminderDate(e.target.value)}
       />
 
+      {/* IMAGE */}
       <input type="file" accept="image/*" onChange={onImagePick} />
 
+      {/* ADD BUTTON */}
       <button onClick={triggerReminder} className="primary-btn">
-        {addedSuccess ? "✅ Reminder Added" : "➕ Add Reminder"}
+        {addedSuccess ? "✅ Added!" : "➕ Add Reminder"}
       </button>
 
+      {/* ACTIVE REMINDER */}
       {isRinging && activeReminder && (
-        <div className="active-reminder">
-          {activeReminder.image ? (
-            <img src={activeReminder.image} className="reminder-image" />
-          ) : (
-            <div className="image-placeholder">⬜</div>
-          )}
-          <p><b>{activeReminder.medicine}</b></p>
-          <p>Dose: {activeReminder.dose}</p>
+        <div className="alarm-screen">
+          <h2>🔔 Time to take medicine!</h2>
+          <p>{activeReminder.medicine}</p>
+          <p>{activeReminder.dose}</p>
+
           <button onClick={markAsTaken} className="confirm-btn">
-            ✅ Mark as Taken
+            ✅ Taken
           </button>
         </div>
       )}
 
-      <hr />
-      <button onClick={() => setShowHistory(!showHistory)}>
-        {showHistory ? "🙈 Hide History" : "👁 Show History"}
+      {/* HISTORY */}
+      <button onClick={() => setShowHistory(!showHistory)} className="secondary-btn">
+        📜 History
       </button>
 
       {showHistory &&
         history.map((h) => (
           <div key={h.id} className="history-item">
-            {h.image ? (
-              <img src={h.image} />
-            ) : (
-              <div className="image-placeholder small">⬜</div>
-            )}
-            <div className="history-content">
-              <strong>{h.medicine}</strong>
-              <div className="taken-time">{h.takenAt}</div>
-            </div>
-            <button
-              className="delete-btn"
-              onClick={() => deleteHistory(h.id)}
-            >
-              ❌
-            </button>
+            <strong>{h.medicine}</strong>
+            <div>{h.takenAt}</div>
+            <button onClick={() => deleteHistory(h.id)}>❌</button>
           </div>
         ))}
 
-      {!isRinging && (
-        <div className="ad-box">
-          <small>Advertisement</small>
-        </div>
-      )}
     </main>
   );
 }
